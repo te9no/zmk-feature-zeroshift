@@ -1,0 +1,23 @@
+menuconfig ZMK_ZEROSHIFT
+    bool "ZeroShift persistent module selection"
+    depends on SETTINGS
+    help
+      Store slot selections and activate them at startup using callbacks
+      supplied by the keyboard configuration.
+
+if ZMK_ZEROSHIFT
+
+config ZMK_ZEROSHIFT_SLOT_COUNT
+    int "Number of local slots"
+    range 1 255
+    default 1
+
+config ZMK_ZEROSHIFT_SETTINGS_SUBTREE
+    string "Settings subtree"
+    default "zeroshift"
+
+config ZMK_ZEROSHIFT_SETTINGS_KEY
+    string "Profile key within the subtree"
+    default "profile-v1"
+
+endif

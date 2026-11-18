@@ -1,3 +1,0 @@
-#include "../cagime-renode/cagime-renode.overlay"
-#include "../../tests/renode/wired.dtsi"
-/ { chosen { zmk,studio-rpc-uart = &uart0; }; };

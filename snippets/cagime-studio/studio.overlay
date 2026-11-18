@@ -1,1 +1,0 @@
-/ { chosen { zmk,studio-rpc-uart = &board_cdc_acm_uart; }; };

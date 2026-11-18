@@ -1,2 +1,0 @@
-#include "../cagime-renode/cagime-renode.overlay"
-#include "../../tests/renode/wired.dtsi"
