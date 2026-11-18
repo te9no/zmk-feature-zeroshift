@@ -1,0 +1,4 @@
+compatible = "cagime,deferred-ec11", "alps,ec11";
+zephyr,deferred-init;
+/* 80 transitions and 20 keymap triggers per rotation give four edges per event. */
+steps = <80>;

@@ -1,0 +1,197 @@
+#include <dt-bindings/led/led.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <input/processors.dtsi>
+#include <dt-bindings/zmk/input_transform.h>
+#include <zephyr/dt-bindings/adc/nrf-saadc.h>
+#define CGM_HAS_INNER_KEYS
+#include "../CaGiMe/CGM-layout.dtsi"
+
+/ {
+    chosen {
+        zmk,physical-layout = &layout_MKB;
+        /delete-property/ zmk,battery;
+    };
+
+    kscan0: kscan0 {
+        compatible = "zmk,kscan-gpio-charlieplex";
+        wakeup-source;
+        interrupt-gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>;
+        /* U103 pads 15, 18, 16, 19, 17, 4 in PCB IO_0..IO_5 order. */
+        gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>,
+                <&gpio0 9 GPIO_ACTIVE_HIGH>,
+                <&gpio0 19 GPIO_ACTIVE_HIGH>,
+                <&gpio0 10 GPIO_ACTIVE_HIGH>,
+                <&gpio1 1 GPIO_ACTIVE_HIGH>,
+                <&gpio0 29 GPIO_ACTIVE_HIGH>;
+    };
+
+    /* Deferred encoders report through the module driver using these stable ZMK sensor indexes. */
+    left_encoder: left_encoder {
+        compatible = "alps,ec11";
+        status = "disabled";
+    };
+
+    right_encoder: right_encoder {
+        compatible = "alps,ec11";
+        status = "disabled";
+    };
+
+    left_inner_encoder: left_inner_encoder { status = "disabled"; };
+    right_inner_encoder: right_inner_encoder { status = "disabled"; };
+
+    sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&left_encoder &right_encoder &left_inner_encoder &right_inner_encoder>;
+        triggers-per-rotation = <20>;
+    };
+
+    behaviors {
+        cagime_led_test: cagime_led_test {
+            compatible = "cagime,behavior-led-test";
+            #binding-cells = <1>;
+            strip = <&cagime_led_strip>;
+            max-channel-value = <4>;
+        };
+    };
+};
+
+&layout_MKB {
+    display-name = "CaGiMe";
+};
+
+&default_transform {
+    /* Row 6 is reserved for the two optional FPC direct-key positions. */
+    rows = <7>;
+};
+
+/* IO_1 and IO_3 share the NFC pins. */
+&uicr { nfct-pins-as-gpios; };
+
+&vbatt { status = "disabled"; };
+/* Lower FPC pins 4 (X) and 3 (Y). This does not enable battery sensing. */
+&adc {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    status = "okay";
+    zephyr,deferred-init;
+
+    channel@2 {
+        reg = <2>;
+        zephyr,input-positive = <NRF_SAADC_AIN2>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <0>;
+        zephyr,resolution = <12>;
+    };
+
+    channel@3 {
+        reg = <3>;
+        zephyr,input-positive = <NRF_SAADC_AIN3>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <0>;
+        zephyr,resolution = <12>;
+    };
+};
+&i2c1 { status = "disabled"; };
+&spi2 { status = "disabled"; };
+&pwm0 { status = "disabled"; };
+
+&pinctrl {
+    cagime_led_default: cagime_led_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 1, 7)>;
+        };
+    };
+
+    cagime_led_sleep: cagime_led_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 1, 7)>;
+            low-power-enable;
+            bias-pull-down;
+        };
+    };
+};
+
+&spi3 {
+    status = "okay";
+    pinctrl-0 = <&cagime_led_default>;
+    pinctrl-1 = <&cagime_led_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    cagime_led_strip: sk6812@0 {
+        compatible = "worldsemi,ws2812-spi";
+        reg = <0>;
+        chain-length = <4>;
+        color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
+        /* 2 us symbol at 4 MHz, with 0.25/0.75 us high for 0/1. */
+        spi-max-frequency = <4000000>;
+        spi-zero-frame = <0x80>;
+        spi-one-frame = <0xe0>;
+        reset-delay = <100>;
+    };
+};
+
+/ {
+    cagime_lower_bus: fpc-lower-spi {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        #include "cagime_pmw3610_bus.dtsi"
+        /* J4/J7 pads 1, 2 and 4. */
+        cs-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
+        sck-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+        sdio-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+
+        cagime_lower_pmw: trackball@0 {
+            #include "cagime_pmw3610.dtsi"
+            irq-gpios = <&gpio0 5 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        };
+    };
+
+    cagime_lower_encoder: lower-encoder {
+        a-gpios = <&gpio1 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+        b-gpios = <&gpio1 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+        #include "cagime_encoder.dtsi"
+    };
+
+    cagime_lower_key: lower-key {
+        compatible = "gpio-keys";
+        zephyr,deferred-init;
+        debounce-interval-ms = <7>;
+
+        key {
+            gpios = <&gpio1 12 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            zephyr,code = <INPUT_KEY_1>;
+        };
+    };
+
+    cagime_stick: lower-stick {
+        compatible = "cagime,analog-stick";
+        io-channels = <&adc 2>, <&adc 3>;
+    };
+
+    split_inputs {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        cagime_right_lower_input: trackball@0 {
+            compatible = "zmk,input-split";
+            reg = <0>;
+        };
+
+        cagime_right_inner_input: trackball@1 {
+            compatible = "zmk,input-split";
+            reg = <1>;
+        };
+
+        cagime_right_lpps_input: lpps@2 {
+            compatible = "zmk,input-split";
+            reg = <2>;
+        };
+
+        cagime_right_stick_input: stick@3 {
+            compatible = "zmk,input-split";
+            reg = <3>;
+        };
+    };
+};

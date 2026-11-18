@@ -1,0 +1,40 @@
+#include "cagime_aaa.dtsi"
+
+&cagime_led_test {
+    power-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>; /* JLC U103 pad 2 / D1 */
+};
+
+/ {
+    left_lower_trackball {
+        compatible = "zmk,input-listener";
+        device = <&cagime_lower_pmw>;
+        input-processors = <&zip_xy_transform INPUT_TRANSFORM_X_INVERT>,
+                           <&zip_xy_to_scroll_mapper>;
+    };
+
+    left_stick {
+        compatible = "zmk,input-listener";
+        device = <&adc>;
+        input-processors = <&zip_xy_to_scroll_mapper>;
+    };
+
+    right_stick {
+        compatible = "zmk,input-listener";
+        device = <&cagime_right_stick_input>;
+    };
+
+    right_lower_trackball {
+        compatible = "zmk,input-listener";
+        device = <&cagime_right_lower_input>;
+    };
+
+    right_inner_trackball {
+        compatible = "zmk,input-listener";
+        device = <&cagime_right_inner_input>;
+    };
+
+    right_lpps {
+        compatible = "zmk,input-listener";
+        device = <&cagime_right_lpps_input>;
+    };
+};

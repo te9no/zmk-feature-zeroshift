@@ -1,0 +1,15 @@
+description: Momentary one-color LED test for CaGiMe AAA r01
+compatible: "cagime,behavior-led-test"
+include: one_param.yaml
+
+properties:
+  power-gpios:
+    type: phandle-array
+    required: true
+  strip:
+    type: phandle
+    required: true
+  max-channel-value:
+    type: int
+    required: true
+    description: Upper bound for the eight-bit red channel sent to each pixel.

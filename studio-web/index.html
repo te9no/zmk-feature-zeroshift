@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZeroShift · CaGiMe モジュール設定</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>ZeroShift</h1>
+      <p>CaGiMe モジュール設定</p>
+    </header>
+    <section aria-label="接続方法">
+      <div class="bar">
+        <strong id="side">未接続</strong>
+        <button type="button" id="connection">USB 接続</button>
+        <button type="button" id="bluetooth">Bluetooth 接続</button>
+      </div>
+      <p id="status" role="status">無線では左側を PC とペアリングし、「Bluetooth 接続」で CaGiMe を選んでください。候補に出ない場合は、左側の Esc（A の左）を押しながら U を押してください。</p>
+    </section>
+    <section id="target-bar" hidden><label for="target">設定する側</label> <select id="target"><option value="left">左側</option><option value="right">右側</option></select> <button id="reload">再読込</button></section>
+    <form hidden id="modules">
+      <div class="slots">
+        <div class="slot">
+          <label for="lower">下側 <span id="lower-connector"></span></label>
+          <select id="lower">
+            <option value="off">オフ</option>
+            <option value="pmw3610">トラックボール（PMW3610）</option>
+            <option value="encoder" data-all-modules>エンコーダ</option>
+            <option value="stick" data-all-modules>アナログスティック</option>
+            <option value="key" data-all-modules>1uキー</option>
+          </select>
+          <small id="lower-state"></small>
+        </div>
+        <div class="slot">
+          <label for="inner">中央側 <span id="inner-connector"></span></label>
+          <select id="inner" aria-describedby="inner-state">
+            <option value="off">オフ</option>
+            <option value="pmw3610">トラックボール（PMW3610）</option>
+            <option value="lpps">LPPS（ADS1220）</option>
+            <option value="encoder" data-all-modules>エンコーダ</option>
+            <option value="key" data-all-modules>1uキー</option>
+          </select>
+          <small id="inner-state"></small>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" id="save">設定を保存</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

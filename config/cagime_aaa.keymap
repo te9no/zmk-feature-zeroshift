@@ -1,0 +1,8 @@
+#define CGM_LED_LOW &cagime_led_test 1
+#define CGM_LED_MAX &cagime_led_test 255
+#define CGM_LED_OFF &cagime_led_test 0
+
+#define CGM_INNER_KEY_BINDINGS &kp C &kp D
+#define CGM_INNER_ENCODER_BINDINGS &inc_dec_kp RIGHT LEFT &inc_dec_kp DOWN UP
+
+#include "CGM.keymap"

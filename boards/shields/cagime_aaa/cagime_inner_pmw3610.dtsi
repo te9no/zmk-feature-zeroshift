@@ -1,0 +1,11 @@
+/ {
+    cagime_inner_bus: fpc-inner-spi {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        #include "cagime_pmw3610_bus.dtsi"
+
+        cagime_inner_pmw: trackball@0 {
+            #include "cagime_pmw3610.dtsi"
+        };
+    };
+};

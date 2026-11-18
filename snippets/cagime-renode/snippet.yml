@@ -1,0 +1,4 @@
+name: cagime-renode
+append:
+  EXTRA_DTC_OVERLAY_FILE: cagime-renode.overlay
+  EXTRA_CONF_FILE: cagime-renode.conf

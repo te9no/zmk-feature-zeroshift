@@ -1,0 +1,47 @@
+#include "cagime_aaa.dtsi"
+#include "cagime_inner_pmw3610.dtsi"
+
+#define CAGIME_LPPS_PSELS <NRF_PSEL(SPIM_SCK, 0, 3)>, \
+                         <NRF_PSEL(SPIM_MOSI, 1, 3)>, \
+                         <NRF_PSEL(SPIM_MISO, 1, 5)>
+#include "cagime_lpps.dtsi"
+
+#define CAGIME_INNER_ENCODER_A <&gpio1 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>
+#define CAGIME_INNER_ENCODER_B <&gpio1 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>
+#define CAGIME_INNER_KEY_GPIO <&gpio1 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
+#include "cagime_inner_gpio.dtsi"
+
+&default_transform {
+    col-offset = <6>;
+};
+
+&cagime_led_test {
+    power-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>; /* JLC U103 pad 20 / D16 */
+};
+
+/* J8 pads 1, 2, 3 and 4. */
+&cagime_inner_bus {
+    cs-gpios = <&gpio1 3 GPIO_ACTIVE_LOW>;
+    sck-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+    sdio-gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+};
+
+&cagime_inner_pmw {
+    irq-gpios = <&gpio0 28 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+};
+
+&cagime_right_lower_input {
+    device = <&cagime_lower_pmw>;
+};
+
+&cagime_right_inner_input {
+    device = <&cagime_inner_pmw>;
+};
+
+&cagime_right_lpps_input {
+    device = <&cagime_lpps_axes>;
+};
+
+&cagime_right_stick_input {
+    device = <&adc>;
+};

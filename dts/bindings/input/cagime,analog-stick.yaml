@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+
+description: CaGiMe lower FPC analog stick
+compatible: "cagime,analog-stick"
+include: base.yaml
+
+properties:
+  io-channels:
+    type: phandle-array
+    required: true
+    description: ADC channels, in X then Y order and ascending channel number

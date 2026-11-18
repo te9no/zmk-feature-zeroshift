@@ -1,0 +1,18 @@
+/ {
+    cagime_inner_encoder: inner-encoder {
+        a-gpios = CAGIME_INNER_ENCODER_A;
+        b-gpios = CAGIME_INNER_ENCODER_B;
+        #include "cagime_encoder.dtsi"
+    };
+
+    cagime_inner_key: inner-key {
+        compatible = "gpio-keys";
+        zephyr,deferred-init;
+        debounce-interval-ms = <7>;
+
+        key {
+            gpios = CAGIME_INNER_KEY_GPIO;
+            zephyr,code = <INPUT_KEY_1>;
+        };
+    };
+};

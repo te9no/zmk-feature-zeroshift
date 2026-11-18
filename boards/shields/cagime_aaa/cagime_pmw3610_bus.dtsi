@@ -1,0 +1,6 @@
+compatible = "te9no,spi-three-wire-gpio";
+zephyr,deferred-init;
+turnaround-delay-us = <4>;
+select-delay-us = <1>;
+deselect-delay-us = <4>;
+recovery-delay-us = <30>;

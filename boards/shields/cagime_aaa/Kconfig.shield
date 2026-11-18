@@ -1,0 +1,8 @@
+config SHIELD_CAGIME_AAA_LEFT
+    def_bool $(shields_list_contains,cagime_aaa_left)
+
+config SHIELD_CAGIME_AAA_RIGHT
+    def_bool $(shields_list_contains,cagime_aaa_right)
+
+config SHIELD_CAGIME_AAA_LEFT_J5
+    def_bool $(shields_list_contains,cagime_aaa_left_j5)

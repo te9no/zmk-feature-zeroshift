@@ -1,0 +1,9 @@
+include:
+  - board: xiao_ble//zmk
+    shield: cagime_aaa_left cagime_aaa_left_j5
+    snippet: cagime-studio
+    artifact-name: cagime-aaa-r01-studio-left
+  - board: xiao_ble//zmk
+    shield: cagime_aaa_right
+    snippet: cagime-relay
+    artifact-name: cagime-aaa-r01-studio-right

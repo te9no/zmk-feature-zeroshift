@@ -1,0 +1,5 @@
+name: cagime-studio
+append:
+  DTS_EXTRA_CPPFLAGS: -DCAGIME_STUDIO_BLE
+  EXTRA_CONF_FILE: studio.conf
+  EXTRA_DTC_OVERLAY_FILE: studio.overlay
