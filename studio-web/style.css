@@ -103,9 +103,4 @@ input:focus-visible + span { outline: 3px solid #067baf; outline-offset: 2px; }
   .choices label:hover > span, .halves label:hover > span { border-color: var(--green); }
 }
 
-.icon-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.module-icon {
-  width: 1.75rem; height: 1.75rem; flex: none; margin-bottom: .3rem;
-  color: var(--green); fill: none; stroke: currentColor; stroke-width: 1.75;
-  stroke-linecap: round; stroke-linejoin: round;
-}
+.module-icon { width: 2rem; height: 2rem; flex: none; margin-bottom: .3rem; }

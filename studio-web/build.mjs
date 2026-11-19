@@ -1,10 +1,11 @@
 import {build} from "esbuild";
-import {copyFile, mkdir, readFile, readdir, writeFile} from "node:fs/promises";
+import {cp, copyFile, mkdir, readFile, readdir, writeFile} from "node:fs/promises";
 await mkdir("dist", {recursive: true});
 await build({entryPoints: ["app.mjs", "rpc.mjs"], bundle: true, splitting: true, chunkNames: "studio-client", minify: true,
   outdir: "dist", format: "esm", outExtension: {".js": ".mjs"}, loader: {".proto": "text"}});
 await copyFile("index.html", "dist/index.html");
 await copyFile("style.css", "dist/style.css");
+await cp("icons", "dist/icons", {recursive: true});
 
 const deps = ["@zmkfirmware/zmk-studio-ts-client", "protobufjs", "long",
   ...(await readdir("node_modules/@protobufjs")).map(name => "@protobufjs/" + name)];
