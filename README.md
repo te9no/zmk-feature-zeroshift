@@ -43,3 +43,27 @@ int err = zeroshift_profile(NULL, &state);      // 現在値を読み取る
 保存時は全スロットを検証してから 1 件の設定として書き込みます。state.saved は保存値、state.active は起動時に初期化に成功した値です。settings のロード完了前は -EAGAIN を返します。分割キーボードでは各側にローカルの設定があり、対象側に要求を届けるのは呼び出し側の役割です。
 
 保存先の既定値は zeroshift/profile-v1 です。既存のバイト配列形式を引き継ぐ場合は CONFIG_ZMK_ZEROSHIFT_SETTINGS_SUBTREE と CONFIG_ZMK_ZEROSHIFT_SETTINGS_KEY を指定し、スロット順・個数と ID の割り当てを維持してください。
+
+## Web UI
+
+この設定画面は CaGiMe Studio 対応ファームウェアの左右の拡張スロットを編集します。[対応機種とファームウェア](https://github.com/te9no/zmk-config-CaGiMe#初回の書き込み)
+
+Node.js 22、npm、Python 3 を用意し、このリポジトリのルートから実行します。
+
+~~~sh
+cd studio-web
+npm ci
+npm run build
+python3 -m http.server 8767 --bind 127.0.0.1 --directory dist
+~~~
+
+Chrome または Edge で [設定画面](http://localhost:8767/) を開きます。**右側を設定するときも、PC の接続先は左側です。**
+
+- **USB** — 左側を PC につなぎ、「USB 接続」から CaGiMe のポートを選びます。
+- **無線** — 左側を PC とペアリングし、USB ケーブルを抜いて無線入力できることを確認します。「無線接続」から CaGiMe を選びます。候補に出ないときは、標準キーマップの左側で A の左にある Esc を押したまま U を押してください。
+
+1. 「設定する側」で左または右を選びます。右を選ぶときは、左右の電源を入れ、両側が通信できる状態にします。
+2. 「下側」「中央側」を実際の装着状態に合わせて選び、「設定を保存」を押します。選択は対象側のフラッシュに保存されます。
+3. **設定した側をリセット**します。左側なら Web UI に再接続し、右側なら左右がつながってから「再読込」を押します。「起動時のドライバー」で適用結果を確認できます。
+
+ビルドで生成される `studio-web/dist/` は、フォルダーごと HTTPS の静的サイトに配置できます。
