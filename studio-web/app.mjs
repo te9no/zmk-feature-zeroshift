@@ -2,6 +2,7 @@ import { moduleSession } from "./rpc.mjs";
 import { openWireless, wirelessAdapter } from "./wireless.mjs";
 const wireless = document.querySelector("#wireless");
 const target = document.querySelector("#target");
+const selectedSide = () => target.querySelector(":checked").value;
 const reload = document.querySelector("#reload");
 
 const connection = document.querySelector("#connection");
@@ -70,7 +71,7 @@ function updateControls() {
   connection.textContent = session ? "USB 切断" : "USB 接続";
   lower.disabled = busy;
   inner.disabled = busy || !state?.innerEnabled;
-  const edited = state && (lower.value !== state.lower || (state.innerEnabled && inner.value !== state.inner));
+  const edited = state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
   save.disabled = busy || !edited;
   document.querySelector("#edit-state").textContent = edited ? "未保存の変更あり" : "";
 }
@@ -90,15 +91,15 @@ function render(next) {
   inner.closest(".slot").hidden = !state.innerEnabled;
   document.querySelector("#lower-connector").textContent = state.innerEnabled ? (left ? "J4" : "J7") : "";
   document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
-  for (const select of [lower, inner]) {
-    for (const option of select.options) {
-      const allowed = state.supported ? state.supported[select.id]?.includes(option.value)
-        : !option.hasAttribute("data-mekabu") && (!option.hasAttribute("data-extended") || !!session?.restart);
-      option.hidden = option.disabled = !allowed;
+  for (const group of [lower, inner]) {
+    for (const input of group.querySelectorAll("input")) {
+      const label = input.closest("label");
+      const allowed = state.supported ? state.supported[group.id]?.includes(input.value)
+        : !label.hasAttribute("data-mekabu") && (!label.hasAttribute("data-extended") || !!session?.restart);
+      label.hidden = input.disabled = !allowed;
+      input.checked = input.value === state[group.id];
     }
   }
-  lower.value = state.lower;
-  inner.value = state.inner;
   document.querySelector("#lower-state").textContent = "起動中：" + mode[state.activeLower];
   document.querySelector("#inner-state").textContent = state.innerEnabled
     ? "起動中：" + mode[state.activeInner]
@@ -150,8 +151,8 @@ async function connect(kind) {
     transport.abortController.signal.addEventListener("abort", () => {
       if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。");
     }, {once: true});
-    target.value = "left";
-    render(await session.profile(target.value));
+    target.querySelector("[value=left]").checked = true;
+    render(await session.profile(selectedSide()));
     status.textContent = currentStatus();
   } catch (error) {
     await disconnect(error.name === "NotFoundError" ? "接続先を確認してください。無線の場合はキーボード名を選びます。" : error.message);
@@ -171,13 +172,13 @@ demo.addEventListener("click", () => {
   if (session) return;
   link = "デモ";
   session = demoSession();
-  target.value = "left";
-  render(session.profile(target.value));
+  target.querySelector("[value=left]").checked = true;
+  render(session.profile(selectedSide()));
   status.textContent = currentStatus();
 });
 restart.addEventListener("click", () => {
   if (busy || !session?.restart) return;
-  session.restart(target.value);
+  session.restart(selectedSide());
   void readTarget();
 });
 connection.addEventListener("click", () => connect("USB"));
@@ -188,7 +189,7 @@ async function readTarget() {
   busy = true;
   render(undefined);
   try {
-    render(await session.profile(target.value));
+    render(await session.profile(selectedSide()));
     status.textContent = currentStatus();
   } catch (error) {
     status.textContent = error.message;
@@ -208,7 +209,7 @@ form.addEventListener("submit", async (event) => {
   updateControls();
   const current = session;
   try {
-    const next = await current.profile(target.value, state.innerEnabled ? [lower.value, inner.value] : [lower.value]);
+    const next = await current.profile(selectedSide(), state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value]);
     if (current !== session) return;
     render(next);
     status.textContent = currentStatus();

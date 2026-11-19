@@ -59,3 +59,46 @@ small, #edit-state { font-size: .85rem; }
   .bar, #target-bar { gap: .45rem; }
   .bar button, #target-bar button { padding-inline: .65rem; }
 }
+
+fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+legend { padding: 0; font-weight: 700; }
+.halves legend { margin-bottom: .45rem; color: var(--muted); font-size: .85rem; }
+.halves label, .choices label { position: relative; cursor: pointer; }
+.halves input, .choices input {
+  position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0;
+}
+.halves label > span, .choices label > span {
+  display: inline-flex; align-items: center; color: var(--ink); margin: 0;
+  font-family: inherit; font-size: .94rem; line-height: 1.35;
+}
+.halves label > span {
+  gap: .65rem; min-height: 2.8rem; padding: .55rem 1rem; background: white;
+  border: 1px solid var(--line); border-radius: .4rem;
+}
+.halves i {
+  width: 1.35rem; height: .95rem; transform: rotate(9deg);
+  background: repeating-linear-gradient(90deg, transparent 0 4px, var(--key-gap, white) 4px 6px),
+              repeating-linear-gradient(transparent 0 3px, var(--key-gap, white) 3px 5px), currentColor;
+}
+.halves [value="right"] + span i { transform: rotate(-9deg); }
+.halves input:checked + span { background: var(--ink); color: white; --key-gap: var(--ink); }
+.slot { display: block; }
+.slot legend { margin-bottom: .65rem; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.choices label > span {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  height: 100%; min-height: 3rem; border: 1px solid var(--line); border-radius: .35rem;
+  background: white; padding: .5rem .65rem .5rem 1.7rem; overflow-wrap: anywhere;
+}
+.choices label > span::before {
+  content: ""; position: absolute; left: .55rem; top: 50%; transform: translateY(-50%);
+  width: .55rem; height: .55rem; border-radius: 50%; border: 1px solid #789081;
+}
+.choices input:checked + span { background: #e5f1e0; border-color: var(--green); font-weight: 700; }
+.choices input:checked + span::before { background: var(--green); border-color: var(--green); }
+.choices small { font: .74rem/1.5 ui-monospace, monospace; }
+.slot > small { display: block; margin-top: .65rem; }
+input:focus-visible + span { outline: 3px solid #067baf; outline-offset: 2px; }
+@media (hover:hover) {
+  .choices label:hover > span, .halves label:hover > span { border-color: var(--green); }
+}
