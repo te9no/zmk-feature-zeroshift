@@ -82,11 +82,12 @@ function render(next) {
   side.textContent = (session?.restart ? "デモ · " : "") + (left ? "左側の設定" : "右側の設定");
   document.querySelector("#lower-connector").textContent = left ? "J4" : "J7";
   document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
-  for (const option of form.querySelectorAll("[data-all-modules]")) {
-    option.hidden = option.disabled = !state.allModules;
-  }
-  for (const option of form.querySelectorAll("[data-demo-only]")) {
-    option.hidden = option.disabled = !session?.restart;
+  for (const select of [lower, inner]) {
+    for (const option of select.options) {
+      const allowed = state.supported ? state.supported[select.id].includes(option.value)
+        : !option.hasAttribute("data-extended") || !!session?.restart;
+      option.hidden = option.disabled = !allowed;
+    }
   }
   lower.value = state.lower;
   inner.value = state.inner;

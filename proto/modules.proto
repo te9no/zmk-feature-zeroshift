@@ -9,4 +9,6 @@ message Response {
   sint32 error = 1;
   Modes saved = 2;
   Modes active = 3;
+  // Bit n permits mode ID n in the corresponding slot.
+  Modes supported = 4;
 }
