@@ -159,5 +159,5 @@ form.addEventListener("submit", async (event) => {
 navigator.serial?.addEventListener("disconnect", (event) => {
   if (event.target === port) void disconnect("USB 接続が切れました。設定を確認するには再接続してください。");
 });
-if (!navigator.serial && !wirelessAdapter()) status.textContent = "Chrome または Edge でこのページを localhost から開いてください。";
+if (!navigator.serial && !wirelessAdapter()) status.textContent = "USB または無線接続に対応した Chrome または Edge で開いてください。";
 render(undefined);
