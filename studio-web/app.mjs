@@ -54,6 +54,8 @@ let busy = false;
 
 function updateControls() {
   document.querySelector("#target-bar").hidden = !session;
+  document.querySelector("#help").hidden = !!session;
+  side.dataset.connected = String(!!state);
   target.disabled = reload.disabled = busy;
   const inDemo = !!session?.restart;
   demo.hidden = !!session && !inDemo;
@@ -68,7 +70,9 @@ function updateControls() {
   connection.textContent = session ? "USB 切断" : "USB 接続";
   lower.disabled = busy;
   inner.disabled = busy || !state?.innerEnabled;
-  save.disabled = busy || !state || (lower.value === state.lower && (!state.innerEnabled || inner.value === state.inner));
+  const edited = state && (lower.value !== state.lower || (state.innerEnabled && inner.value !== state.inner));
+  save.disabled = busy || !edited;
+  document.querySelector("#edit-state").textContent = edited ? "未保存の変更あり" : "";
 }
 
 function render(next) {
@@ -95,9 +99,9 @@ function render(next) {
   }
   lower.value = state.lower;
   inner.value = state.inner;
-  document.querySelector("#lower-state").textContent = "起動時のドライバー " + mode[state.activeLower];
+  document.querySelector("#lower-state").textContent = "起動中：" + mode[state.activeLower];
   document.querySelector("#inner-state").textContent = state.innerEnabled
-    ? "起動時のドライバー " + mode[state.activeInner]
+    ? "起動中：" + mode[state.activeInner]
     : "このファームウェアでは中央側を設定できません。";
   updateControls();
 }

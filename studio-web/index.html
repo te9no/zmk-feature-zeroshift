@@ -10,24 +10,35 @@
 <body>
   <main>
     <header>
-      <h1>ZeroShift</h1>
-      <p>CaGiMe・MeKaBu モジュール設定</p>
+      <a class="brand" href="./" aria-label="ZeroShift ホーム"><i aria-hidden="true"></i>ZeroShift</a>
+      <span class="models">CaGiMe / MeKaBu</span>
     </header>
-    <section aria-label="接続方法">
-      <div class="bar">
-        <strong id="side">未接続</strong>
-        <button type="button" id="connection">USB 接続</button>
-        <button type="button" id="wireless">無線接続</button>
-        <button type="button" id="demo">デモモード</button>
-      </div>
-      <p id="status" role="status">無線では左側を PC とペアリングし、「無線接続」でキーボードを選んでください。CaGiMe が候補に出ない場合は、左側の Esc（A の左）を押しながら U を押してください。</p>
-    </section>
-    <section id="target-bar" hidden><label for="target">設定する側</label> <select id="target"><option value="left">左側</option><option value="right">右側</option></select> <button id="reload">再読込</button> <button type="button" id="restart" hidden>デモで再起動</button></section>
+    <div class="workspace">
+      <section class="connect" aria-labelledby="heading">
+        <div class="title-row"><h1 id="heading">モジュール設定</h1><strong id="side">未接続</strong></div>
+        <p id="status" role="status">左側のキーボードを PC に接続してください。</p>
+        <div class="bar">
+          <button type="button" id="connection">USB 接続</button>
+          <button type="button" id="wireless">無線接続</button>
+          <button type="button" id="demo">デモモード</button>
+        </div>
+        <details id="help">
+          <summary>接続方法</summary>
+          <p>USB は左側の Studio 用ポートを選びます。無線では左側を PC とペアリングし、接続候補から機種名を選んでください。</p>
+          <p>CaGiMe が無線の候補に出ないときは、標準配列の左側で Esc を押しながら U を押します。</p>
+        </details>
+      </section>
+      <section id="target-bar" hidden aria-label="設定対象">
+        <label for="target">設定する側</label>
+        <select id="target"><option value="left">左側</option><option value="right">右側</option></select>
+        <button id="reload">再読込</button>
+        <button type="button" id="restart" hidden>デモで再起動</button>
+      </section>
     <form hidden id="modules">
       <div class="slots">
         <div class="slot">
           <label for="lower"><b id="slot-name">下側</b> <span id="lower-connector"></span></label>
-          <select id="lower">
+          <select id="lower" aria-describedby="lower-state">
             <option value="off">オフ</option>
             <option value="pmw3610">トラックボール（PMW3610）</option>
             <option value="encoder" data-all-modules>エンコーダ</option>
@@ -54,9 +65,11 @@
         </div>
       </div>
       <div class="actions">
+        <span id="edit-state" role="status"></span>
         <button type="submit" id="save">設定を保存</button>
       </div>
     </form>
+    </div>
   </main>
 </body>
 </html>
