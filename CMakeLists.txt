@@ -1,4 +1,7 @@
 if(CONFIG_ZMK_ZEROSHIFT)
   zephyr_include_directories(include)
   target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/profile.c)
+  if(CONFIG_ZMK_SPLIT_RELAY_EVENT AND CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/relay.c)
+  endif()
 endif()
