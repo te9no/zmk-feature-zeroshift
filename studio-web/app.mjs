@@ -1,4 +1,3 @@
-import "./input-test.mjs";
 import { moduleSession } from "./rpc.mjs";
 import { openWireless, wirelessAdapter } from "./wireless.mjs";
 const wireless = document.querySelector("#wireless");
@@ -20,6 +19,30 @@ const mode = {
   stick: "アナログスティック",
   key: "1uキー",
 };
+const demo = document.querySelector("#demo");
+const restart = document.querySelector("#restart");
+const initialStatus = status.textContent;
+
+function demoSession() {
+  const profiles = {};
+  for (const side of ["left", "right"]) {
+    profiles[side] = {side, lower: "off", inner: "off", activeLower: "off", activeInner: "off",
+      innerEnabled: true, allModules: true};
+  }
+  return {
+    profile(side, modes) {
+      const profile = profiles[side];
+      if (modes) [profile.lower, profile.inner] = modes;
+      return {...profile};
+    },
+    restart(side) {
+      const profile = profiles[side];
+      profile.activeLower = profile.lower;
+      profile.activeInner = profile.inner;
+    },
+  };
+}
+
 let link;
 let port;
 let session;
@@ -29,8 +52,13 @@ let busy = false;
 function updateControls() {
   document.querySelector("#target-bar").hidden = !session;
   target.disabled = reload.disabled = busy;
-  connection.hidden = !!session && link === "無線";
-  wireless.hidden = !!session && link === "USB";
+  const inDemo = !!session?.restart;
+  demo.hidden = !!session && !inDemo;
+  demo.disabled = restart.disabled = busy;
+  demo.textContent = inDemo ? "デモを終了" : "デモモード";
+  restart.hidden = !inDemo;
+  connection.hidden = !!session && link !== "USB";
+  wireless.hidden = !!session && link !== "無線";
   wireless.disabled = busy || !wirelessAdapter();
   wireless.textContent = session ? "無線切断" : "無線接続";
   connection.disabled = busy || !navigator.serial;
@@ -50,7 +78,7 @@ function render(next) {
   }
 
   const left = state.side === "left";
-  side.textContent = left ? "左側の設定" : "右側の設定";
+  side.textContent = (session?.restart ? "デモ · " : "") + (left ? "左側の設定" : "右側の設定");
   document.querySelector("#lower-connector").textContent = left ? "J4" : "J7";
   document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
   for (const option of form.querySelectorAll("[data-all-modules]")) {
@@ -67,8 +95,10 @@ function render(next) {
 
 function currentStatus() {
   if (state.lower !== state.activeLower || state.inner !== state.activeInner) {
+    if (session?.restart) return "デモに保存しました。「デモで再起動」を押すと、この側の起動時のドライバーが切り替わります。";
     return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。左側をリセットした場合は 再接続してください。";
   }
+  if (session?.restart) return "デモの設定はこの画面内で有効です。デモを終了すると初期状態に戻ります。";
   return "本体から設定を読み取りました。";
 }
 
@@ -117,6 +147,26 @@ async function connect(kind) {
     updateControls();
   }
 }
+demo.addEventListener("click", () => {
+  if (busy) return;
+  if (session?.restart) {
+    session = undefined;
+    render(undefined);
+    status.textContent = initialStatus;
+    return;
+  }
+  if (session) return;
+  link = "デモ";
+  session = demoSession();
+  target.value = "left";
+  render(session.profile(target.value));
+  status.textContent = currentStatus();
+});
+restart.addEventListener("click", () => {
+  if (busy || !session?.restart) return;
+  session.restart(target.value);
+  void readTarget();
+});
 connection.addEventListener("click", () => connect("USB"));
 wireless.addEventListener("click", () => connect("無線"));
 

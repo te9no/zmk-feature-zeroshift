@@ -18,22 +18,11 @@
         <strong id="side">未接続</strong>
         <button type="button" id="connection">USB 接続</button>
         <button type="button" id="wireless">無線接続</button>
-        <button type="button" id="test">入力をテスト</button>
+        <button type="button" id="demo">デモモード</button>
       </div>
       <p id="status" role="status">無線では左側を PC とペアリングし、「無線接続」で CaGiMe を選んでください。候補に出ない場合は、左側の Esc（A の左）を押しながら U を押してください。</p>
     </section>
-    <section id="target-bar" hidden><label for="target">設定する側</label> <select id="target"><option value="left">左側</option><option value="right">右側</option></select> <button id="reload">再読込</button></section>
-    <dialog id="input-test" aria-labelledby="test-title">
-      <h2 id="test-title">入力テスト</h2>
-      <p>テスト領域でキーやモジュールを操作してください。他のキーボードやマウスの入力も表示されます。</p>
-      <div id="test-area" tabindex="0" autofocus aria-label="入力テスト領域">
-        <div>キー <output id="test-key">—</output></div>
-        <div>ポインター移動 <output id="test-motion">—</output></div>
-        <div>ボタン <output id="test-button">—</output></div>
-        <div>スクロール <output id="test-wheel">—</output></div>
-      </div>
-      <form method="dialog"><button>閉じる</button></form>
-    </dialog>
+    <section id="target-bar" hidden><label for="target">設定する側</label> <select id="target"><option value="left">左側</option><option value="right">右側</option></select> <button id="reload">再読込</button> <button type="button" id="restart" hidden>デモで再起動</button></section>
     <form hidden id="modules">
       <div class="slots">
         <div class="slot">
