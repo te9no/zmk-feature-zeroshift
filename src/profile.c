@@ -47,7 +47,7 @@ static int apply_profile(void) {
                 continue;
             }
             int err = zeroshift_start_mode(i, mode);
-            if (err < 0) {
+            if (err != 0) {
                 LOG_ERR("Slot %u mode %u failed to start: %d", (unsigned)i, mode, err);
             } else {
                 profile.active[i] = mode;
