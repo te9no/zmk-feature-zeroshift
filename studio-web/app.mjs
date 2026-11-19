@@ -52,6 +52,8 @@ let port;
 let session;
 let state;
 let busy = false;
+let generation = 0;
+const drafts = new Map();
 
 function updateControls() {
   document.querySelector("#target-bar").hidden = !session;
@@ -97,7 +99,7 @@ function render(next) {
       const allowed = state.supported ? state.supported[group.id]?.includes(input.value)
         : !label.hasAttribute("data-mekabu") && (!label.hasAttribute("data-extended") || !!session?.restart);
       label.hidden = input.disabled = !allowed;
-      input.checked = input.value === state[group.id];
+      input.checked = input.value === (drafts.get(state.side)?.[group.id] ?? state[group.id]);
     }
   }
   document.querySelector("#lower-state").textContent = "起動中：" + mode[state.activeLower];
@@ -117,32 +119,47 @@ function currentStatus() {
 }
 
 async function disconnect(message) {
+  const closing = ++generation;
+  busy = true;
+  drafts.clear();
   const previous = session;
   session = undefined;
   const oldPort = port;
   port = undefined;
-  await previous?.close();
-  if (oldPort?.readable) await oldPort.close().catch(() => {});
   render(undefined);
   status.textContent = message.replaceAll(new RegExp(["blue", "tooth"].join(""), "gi"), "無線");
+  try {
+    await previous?.close();
+  } finally {
+    if (oldPort?.readable) await oldPort.close().catch(() => {});
+    if (closing === generation) {
+      busy = false;
+      updateControls();
+    }
+  }
 }
 
 async function connect(kind) {
+  if (busy) return;
+  if (session) {
+    await disconnect("左側を USB または 無線 で接続してください。");
+    return;
+  }
+  const opening = ++generation;
   busy = true;
   updateControls();
   try {
-    if (session) {
-      await disconnect("左側を USB または 無線 で接続してください。");
-      return;
-    }
     link = kind;
     let transport;
     if (kind === "無線") {
       transport = await openWireless();
     } else {
-      port = await navigator.serial.requestPort({filters: [{usbVendorId: 0x1d50, usbProductId: 0x615e}]});
-      await port.open({baudRate: 115200});
-      await port.setSignals({dataTerminalReady: true});
+      const selected = await navigator.serial.requestPort({filters: [{usbVendorId: 0x1d50, usbProductId: 0x615e}]});
+      port = selected;
+      await selected.open({baudRate: 115200});
+      if (opening !== generation) return;
+      await selected.setSignals({dataTerminalReady: true});
+      if (opening !== generation) return;
       transport = {readable: port.readable, writable: port.writable, abortController: new AbortController()};
     }
     status.textContent = "本体の設定を読み取っています。";
@@ -152,19 +169,25 @@ async function connect(kind) {
       if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。");
     }, {once: true});
     target.querySelector("[value=left]").checked = true;
-    render(await session.profile(selectedSide()));
+    const next = await current.profile(selectedSide());
+    if (current !== session) return;
+    render(next);
     status.textContent = currentStatus();
   } catch (error) {
+    if (opening !== generation) return;
     await disconnect(error.name === "NotFoundError" ? "接続先を確認してください。無線の場合はキーボード名を選びます。" : error.message);
   } finally {
-    busy = false;
-    updateControls();
+    if (opening === generation) {
+      busy = false;
+      updateControls();
+    }
   }
 }
 demo.addEventListener("click", () => {
   if (busy) return;
   if (session?.restart) {
     session = undefined;
+    drafts.clear();
     render(undefined);
     status.textContent = initialStatus;
     return;
@@ -186,22 +209,35 @@ wireless.addEventListener("click", () => connect("無線"));
 
 async function readTarget() {
   if (busy || !session) return;
+  const current = session;
   busy = true;
   render(undefined);
   try {
-    render(await session.profile(selectedSide()));
+    const next = await current.profile(selectedSide());
+    if (current !== session) return;
+    render(next);
     status.textContent = currentStatus();
   } catch (error) {
-    status.textContent = error.message;
+    if (current === session) status.textContent = error.message;
   } finally {
-    busy = false;
-    updateControls();
+    if (current === session) {
+      busy = false;
+      updateControls();
+    }
   }
 }
 target.addEventListener("change", readTarget);
 reload.addEventListener("click", readTarget);
 
-form.addEventListener("change", updateControls);
+form.addEventListener("change", ({target: input}) => {
+  if (!state || !input.matches("input[type=radio]")) return;
+  const slot = input.closest(".slot").id;
+  const draft = drafts.get(state.side) ?? {};
+  if (input.value === state[slot]) delete draft[slot];
+  else draft[slot] = input.value;
+  drafts.set(state.side, draft);
+  updateControls();
+});
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!session || busy || save.disabled) return;
@@ -211,13 +247,16 @@ form.addEventListener("submit", async (event) => {
   try {
     const next = await current.profile(selectedSide(), state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value]);
     if (current !== session) return;
+    drafts.delete(next.side);
     render(next);
     status.textContent = currentStatus();
   } catch (error) {
     if (current === session) status.textContent = error.message;
   } finally {
-    busy = false;
-    updateControls();
+    if (current === session) {
+      busy = false;
+      updateControls();
+    }
   }
 });
 
