@@ -1,3 +1,4 @@
+import "./input-test.mjs";
 import { moduleSession } from "./rpc.mjs";
 import { openWireless, wirelessAdapter } from "./wireless.mjs";
 const wireless = document.querySelector("#wireless");
