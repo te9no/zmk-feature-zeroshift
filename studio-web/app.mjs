@@ -16,6 +16,7 @@ const mode = {
   pmw3610: "トラックボール（PMW3610）",
   lpps: "LPPS（ADS1220）",
   encoder: "エンコーダ",
+  pat9125: "光学エンコーダ（PAT9125）",
   stick: "アナログスティック",
   key: "1uキー",
 };
@@ -83,6 +84,9 @@ function render(next) {
   document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
   for (const option of form.querySelectorAll("[data-all-modules]")) {
     option.hidden = option.disabled = !state.allModules;
+  }
+  for (const option of form.querySelectorAll("[data-demo-only]")) {
+    option.hidden = option.disabled = !session?.restart;
   }
   lower.value = state.lower;
   inner.value = state.inner;
