@@ -26,3 +26,5 @@ button { border: 1px solid #154e41; background: #154e41; color: #fff; cursor: po
 button:enabled:hover { background: #226957; }
 button:disabled, select:disabled { opacity: .65; cursor: default; }
 :focus-visible { outline: 3px solid #28745f; outline-offset: 3px; }
+
+.slot[hidden] { display: none; }

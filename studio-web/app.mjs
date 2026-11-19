@@ -12,6 +12,8 @@ const lower = document.querySelector("#lower");
 const inner = document.querySelector("#inner");
 const save = document.querySelector("#save");
 const mode = {
+  rzt: "RZT",
+  tpd: "トラックパッド",
   off: "オフ",
   pmw3610: "トラックボール（PMW3610）",
   lpps: "LPPS（ADS1220）",
@@ -66,7 +68,7 @@ function updateControls() {
   connection.textContent = session ? "USB 切断" : "USB 接続";
   lower.disabled = busy;
   inner.disabled = busy || !state?.innerEnabled;
-  save.disabled = busy || !state || (lower.value === state.lower && inner.value === state.inner);
+  save.disabled = busy || !state || (lower.value === state.lower && (!state.innerEnabled || inner.value === state.inner));
 }
 
 function render(next) {
@@ -79,13 +81,15 @@ function render(next) {
   }
 
   const left = state.side === "left";
-  side.textContent = (session?.restart ? "デモ · " : "") + (left ? "左側の設定" : "右側の設定");
-  document.querySelector("#lower-connector").textContent = left ? "J4" : "J7";
+  side.textContent = (session?.restart ? "デモ · " : "") + (state.model || "CaGiMe") + " · " + (left ? "左側の設定" : "右側の設定");
+  document.querySelector("#slot-name").textContent = state.innerEnabled ? "下側" : "拡張ソケット";
+  inner.closest(".slot").hidden = !state.innerEnabled;
+  document.querySelector("#lower-connector").textContent = state.innerEnabled ? (left ? "J4" : "J7") : "";
   document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
   for (const select of [lower, inner]) {
     for (const option of select.options) {
-      const allowed = state.supported ? state.supported[select.id].includes(option.value)
-        : !option.hasAttribute("data-extended") || !!session?.restart;
+      const allowed = state.supported ? state.supported[select.id]?.includes(option.value)
+        : !option.hasAttribute("data-mekabu") && (!option.hasAttribute("data-extended") || !!session?.restart);
       option.hidden = option.disabled = !allowed;
     }
   }
@@ -146,7 +150,7 @@ async function connect(kind) {
     render(await session.profile(target.value));
     status.textContent = currentStatus();
   } catch (error) {
-    await disconnect(error.name === "NotFoundError" ? "接続先を確認してください。無線 の場合は CaGiMe を選びます。" : error.message);
+    await disconnect(error.name === "NotFoundError" ? "接続先を確認してください。無線の場合はキーボード名を選びます。" : error.message);
   } finally {
     busy = false;
     updateControls();
@@ -200,7 +204,7 @@ form.addEventListener("submit", async (event) => {
   updateControls();
   const current = session;
   try {
-    const next = await current.profile(target.value, [lower.value, inner.value]);
+    const next = await current.profile(target.value, state.innerEnabled ? [lower.value, inner.value] : [lower.value]);
     if (current !== session) return;
     render(next);
     status.textContent = currentStatus();

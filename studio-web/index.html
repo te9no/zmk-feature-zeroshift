@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ZeroShift · CaGiMe モジュール設定</title>
+  <title>ZeroShift · CaGiMe・MeKaBu モジュール設定</title>
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.mjs"></script>
 </head>
@@ -11,7 +11,7 @@
   <main>
     <header>
       <h1>ZeroShift</h1>
-      <p>CaGiMe モジュール設定</p>
+      <p>CaGiMe・MeKaBu モジュール設定</p>
     </header>
     <section aria-label="接続方法">
       <div class="bar">
@@ -20,13 +20,13 @@
         <button type="button" id="wireless">無線接続</button>
         <button type="button" id="demo">デモモード</button>
       </div>
-      <p id="status" role="status">無線では左側を PC とペアリングし、「無線接続」で CaGiMe を選んでください。候補に出ない場合は、左側の Esc（A の左）を押しながら U を押してください。</p>
+      <p id="status" role="status">無線では左側を PC とペアリングし、「無線接続」でキーボードを選んでください。CaGiMe が候補に出ない場合は、左側の Esc（A の左）を押しながら U を押してください。</p>
     </section>
     <section id="target-bar" hidden><label for="target">設定する側</label> <select id="target"><option value="left">左側</option><option value="right">右側</option></select> <button id="reload">再読込</button> <button type="button" id="restart" hidden>デモで再起動</button></section>
     <form hidden id="modules">
       <div class="slots">
         <div class="slot">
-          <label for="lower">下側 <span id="lower-connector"></span></label>
+          <label for="lower"><b id="slot-name">下側</b> <span id="lower-connector"></span></label>
           <select id="lower">
             <option value="off">オフ</option>
             <option value="pmw3610">トラックボール（PMW3610）</option>
@@ -35,6 +35,8 @@
             <option value="lpps" data-extended hidden disabled>LPPS（ADS1220）</option>
             <option value="stick" data-all-modules>アナログスティック</option>
             <option value="key" data-all-modules>1uキー</option>
+            <option value="rzt" data-mekabu>RZT</option>
+            <option value="tpd" data-mekabu>トラックパッド</option>
           </select>
           <small id="lower-state"></small>
         </div>
