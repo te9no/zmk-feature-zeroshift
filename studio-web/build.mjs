@@ -7,7 +7,7 @@ await copyFile("index.html", "dist/index.html");
 await copyFile("style.css", "dist/style.css");
 await cp("icons", "dist/icons", {recursive: true});
 
-const deps = ["@zmkfirmware/zmk-studio-ts-client", "protobufjs", "long",
+const deps = ["@zmkfirmware/zmk-studio-ts-client", "protobufjs", "long", "web-serial-polyfill",
   ...(await readdir("node_modules/@protobufjs")).map(name => "@protobufjs/" + name)];
 const licenses = [await readFile("../LICENSE.studio-template", "utf8")];
 for (const dep of deps) {
