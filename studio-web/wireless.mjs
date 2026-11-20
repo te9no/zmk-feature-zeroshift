@@ -8,7 +8,7 @@ export function wirelessAdapter() {
 
 export async function openWireless() {
   const device = await wirelessAdapter().requestDevice({
-    filters: [{namePrefix: "CaGiMe"}, {namePrefix: "MeKaBu"}, {services: [service]}],
+    filters: [{namePrefix: "CaGiMe"}, {namePrefix: "MeKaBu"}, {namePrefix: "Polaris"}, {namePrefix: "Geacon"}, {services: [service]}],
     optionalServices: [service],
   });
   const abortController = new AbortController();

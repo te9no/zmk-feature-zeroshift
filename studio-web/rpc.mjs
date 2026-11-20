@@ -10,6 +10,8 @@ const mekabuRequest = mekabu.lookupType("mekabu.Request");
 const mekabuResponse = mekabu.lookupType("mekabu.Response");
 const mekabuModes = ["off", "pmw3610", "stick", "encoder", "key", "rzt", "tpd", "lpps"];
 
+const polarisModes = ["off", "pmw3610", "stick", "encoder", "tpd", "lpps", "iqs"];
+
 const root = protobuf.parse(schema).root;
 const request = root.lookupType("cagime.Request");
 const response = root.lookupType("cagime.Response");
@@ -48,32 +50,35 @@ export function moduleSession(transport) {
       if (!subsystem) {
         const list = await invoke({listCustomSubsystems: {}});
         subsystem = list?.listCustomSubsystems?.subsystems.find(s =>
-          ["cagime__modules", "mekabu__modules"].includes(s.identifier));
+          ["cagime__modules", "mekabu__modules", "polaris__modules"].includes(s.identifier));
         if (!subsystem) throw new Error("ZeroShift 対応の左側ファームウェアを確認してください。");
       }
-      const isMeKaBu = subsystem.identifier === "mekabu__modules";
+      const polaris = subsystem.identifier === "polaris__modules";
+      const singleSlot = polaris || subsystem.identifier === "mekabu__modules";
+      const modeNames = polaris ? polarisModes : singleSlot ? mekabuModes : names;
+      const supported = polaris ? (side === "left" ? polarisModes.slice(0, 6) : ["off", "pmw3610", "tpd", "iqs"]) : modeNames;
       const index = subsystem.index;
       let operation = {get: true};
       if (modes) {
-        const ids = modes.map(mode => (isMeKaBu ? mekabuModes : names).indexOf(mode));
-        if (ids.length !== (isMeKaBu ? 1 : 2) || ids.includes(-1)) throw new Error("未対応のモジュールです。");
-        operation = {set: isMeKaBu ? ids[0] : {lower: ids[0], inner: ids[1]}};
+        const ids = modes.map(mode => supported.includes(mode) ? modeNames.indexOf(mode) : -1);
+        if (ids.length !== (singleSlot ? 1 : 2) || ids.includes(-1)) throw new Error("未対応のモジュールです。");
+        operation = {set: singleSlot ? ids[0] : {lower: ids[0], inner: ids[1]}};
       }
-      const payload = (isMeKaBu ? mekabuRequest : request).encode({right: side === "right", ...operation}).finish();
+      const payload = (singleSlot ? mekabuRequest : request).encode({right: side === "right", ...operation}).finish();
       const result = (await invoke({call: {subsystemIndex: index, payload}}))?.call;
       if (result?.subsystemIndex !== index) throw new Error("本体からの応答を確認できませんでした。");
-      const {saved, active, supported, error} = (isMeKaBu ? mekabuResponse : response).decode(result.payload);
+      const {saved, active, supported: mask, error} = (singleSlot ? mekabuResponse : response).decode(result.payload);
       if (side === "right" && [-110, -116, -11].includes(error)) {
         throw new Error("右側の応答を確認できません。電源と左右の接続を確認して再読込してください。");
       }
-      if (isMeKaBu) {
-        if (error || !mekabuModes[saved] || !mekabuModes[active]) throw new Error("設定を確認できませんでした（" + error + "）。");
-        return {model: "MeKaBu", side, lower: mekabuModes[saved], activeLower: mekabuModes[active],
-          innerEnabled: false, supported: {lower: mekabuModes}};
+      if (singleSlot) {
+        if (error || !supported.includes(modeNames[saved]) || !supported.includes(modeNames[active])) throw new Error("設定を確認できませんでした（" + error + "）。");
+        return {model: polaris ? "Polaris" : "MeKaBu", side, lower: modeNames[saved], activeLower: modeNames[active],
+          innerEnabled: false, supported: {lower: supported}};
       }
       if (error || !saved || !active) throw new Error("設定を確認できませんでした（" + error + "）。");
-      return {model: "CaGiMe", side, supported: supported && {lower: names.filter((_, i) => supported.lower & (1 << i)),
-        inner: names.filter((_, i) => supported.inner & (1 << i))}, lower: names[saved.lower], inner: names[saved.inner],
+      return {model: "CaGiMe", side, supported: mask && {lower: names.filter((_, i) => mask.lower & (1 << i)),
+        inner: names.filter((_, i) => mask.inner & (1 << i))}, lower: names[saved.lower], inner: names[saved.inner],
         activeLower: names[active.lower], activeInner: names[active.inner], innerEnabled: true, allModules: true};
     },
     async close() {
