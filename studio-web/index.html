@@ -11,12 +11,12 @@
   <main>
     <header>
       <a class="brand" href="./" aria-label="ZeroShift ホーム"><i aria-hidden="true"></i>ZeroShift</a>
-      <span class="models">CaGiMe / MeKaBu / Polaris</span>
+      <span class="models">CaGiMe / MeKaBu / Polaris / Ananta</span>
     </header>
     <div class="workspace">
       <section class="connect" aria-labelledby="heading">
         <div class="title-row"><h1 id="heading">モジュール設定</h1><strong id="side">未接続</strong></div>
-        <p id="status" role="status">左側のキーボードを PC に接続してください。</p>
+        <p id="status" role="status">親機（Ananta は右側、ほかの対応機種は左側）を PC に接続してください。</p>
         <div class="bar">
           <button type="button" id="connection">USB 接続</button>
           <button type="button" id="wireless">無線接続</button>
@@ -24,7 +24,7 @@
         </div>
         <details id="help">
           <summary>接続方法</summary>
-          <p>USB は左側の Studio 用ポートを選びます。無線では左側を PC とペアリングし、接続候補から機種名を選んでください。</p>
+          <p>USB は親機の Studio 用ポートを選びます。無線では親機を PC とペアリングし、接続候補から機種名を選んでください。</p>
           <p>CaGiMe が無線の候補に出ないときは、標準配列の左側で Esc を押しながら U を押します。</p>
         </details>
       </section>
@@ -56,8 +56,9 @@
           <small id="lower-state"></small>
         </fieldset>
         <fieldset class="slot" id="inner" aria-describedby="inner-state">
-          <legend>中央側 <span id="inner-connector"></span></legend>
+          <legend><b id="inner-name">中央側</b> <span id="inner-connector"></span></legend>
           <div class="choices">
+              <label data-extended data-mekabu><input type="radio" name="innerMode" value="iqs"><span><img class="module-icon" src="icons/tpd.png" width="32" height="32" alt="">トラックパッド<small>IQS9151</small></span></label>
               <label><input type="radio" name="innerMode" value="off"><span><img class="module-icon" src="icons/off.png" width="32" height="32" alt="">オフ</span></label>
               <label><input type="radio" name="innerMode" value="pmw3610"><span><img class="module-icon" src="icons/pmw3610.png" width="32" height="32" alt="">トラックボール<small>PMW3610</small></span></label>
               <label><input type="radio" name="innerMode" value="lpps"><span><img class="module-icon" src="icons/lpps.png" width="32" height="32" alt="">LPPS<small>ADS1220</small></span></label>
