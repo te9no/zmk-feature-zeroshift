@@ -171,9 +171,9 @@ async function connect(kind) {
     transport.abortController.signal.addEventListener("abort", () => {
       if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。");
     }, {once: true});
-    target.querySelector("[value=left]").checked = true;
-    const next = await current.profile(selectedSide());
+    const next = await current.profile();
     if (current !== session) return;
+    target.querySelector(`[value="${next.side}"]`).checked = true;
     render(next);
     status.textContent = currentStatus();
   } catch (error) {

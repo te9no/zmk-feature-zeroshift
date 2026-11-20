@@ -56,6 +56,7 @@ export function moduleSession(transport) {
       }
       const ananta = subsystem.identifier === "saa__modules";
       const polaris = subsystem.identifier === "polaris__modules";
+      side ??= ananta ? "right" : "left";
       const singleSlot = polaris || subsystem.identifier === "mekabu__modules";
       const modeNames = ananta ? anantaModes : polaris ? polarisModes : singleSlot ? mekabuModes : names;
       const supported = polaris ? (side === "left" ? polarisModes.slice(0, 6) : ["off", "pmw3610", "tpd", "iqs"]) : modeNames;
