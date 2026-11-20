@@ -14,6 +14,7 @@ const inner = document.querySelector("#inner");
 const save = document.querySelector("#save");
 const mode = {
   rzt: "RZT",
+  iqs: "トラックパッド（IQS9151）",
   tpd: "トラックパッド",
   off: "オフ",
   pmw3610: "トラックボール（PMW3610）",
