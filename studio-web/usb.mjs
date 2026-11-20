@@ -34,6 +34,12 @@ class StudioUsbPort extends SerialPort {
     return this.inputStream;
   }
 
+  async interrupt() {
+    // Closing the WebUSB handle cancels outstanding endpoint transfers.
+    this.inputStream = null;
+    if (this.device.opened) await this.device.close();
+  }
+
   async close() {
     try {
       await this.inputStream?.cancel().catch(() => {});

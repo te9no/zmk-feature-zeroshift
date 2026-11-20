@@ -121,7 +121,7 @@ function currentStatus() {
   return "本体から設定を読み取りました。";
 }
 
-async function disconnect(message) {
+async function disconnect(message, interrupted = false) {
   const closing = ++generation;
   busy = true;
   drafts.clear();
@@ -134,7 +134,13 @@ async function disconnect(message) {
   try {
     await previous?.close();
   } finally {
-    if (oldPort?.readable) await oldPort.close().catch(() => {});
+    if (oldPort) {
+      if (interrupted && oldPort.interrupt) await oldPort.interrupt().catch(() => {});
+      else {
+        if (interrupted) void oldPort.writable?.abort().catch(() => {});
+        await oldPort.close().catch(() => {});
+      }
+    }
     if (closing === generation) {
       busy = false;
       updateControls();
@@ -169,7 +175,7 @@ async function connect(kind) {
     const current = moduleSession(transport);
     session = current;
     transport.abortController.signal.addEventListener("abort", () => {
-      if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。");
+      if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。", true);
     }, {once: true});
     target.querySelector("[value=left]").checked = true;
     const next = await current.profile(selectedSide());
@@ -264,7 +270,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 navigator.serial?.addEventListener("disconnect", (event) => {
-  if (event.target === port) void disconnect("USB 接続が切れました。設定を確認するには再接続してください。");
+  if (event.target === port) void disconnect("USB 接続が切れました。設定を確認するには再接続してください。", true);
 });
 if (!usb.requestPort) status.textContent = "このブラウザーでは USB デバイスを選択できません。Android ではリンクをコピーし、Chrome アプリで開いてください。";
 render(undefined);

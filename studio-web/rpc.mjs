@@ -21,12 +21,30 @@ export function moduleSession(transport) {
   const signal = transport.abortController.signal;
   const tx = new TransformStream(get_encoder());
   const rx = new TransformStream(get_decoder());
-  const pipes = Promise.allSettled([
-    tx.readable.pipeTo(transport.writable, {signal, preventAbort: true}),
-    transport.readable.pipeTo(rx.writable, {signal}),
-  ]);
   const reader = rx.readable.getReader();
   const writer = tx.writable.getWriter();
+  const frames = tx.readable.getReader();
+  const output = transport.writable.getWriter();
+
+  function transportEnded(error) {
+    if (!signal.aborted) transport.abortController.abort(
+      new Error("接続が切れました。本体に再接続してください。", {cause: error}));
+  }
+  output.closed.then(transportEnded, transportEnded);
+  const receiving = transport.readable.pipeTo(rx.writable, {signal}).then(transportEnded, transportEnded);
+
+  async function sendFrames() {
+    try {
+      while (!signal.aborted) {
+        const {value, done} = await frames.read();
+        if (done || signal.aborted) return;
+        await output.write(value);
+      }
+    } catch (error) {
+      transportEnded(error);
+    }
+  }
+  void sendFrames();
   let sequence = 0;
   let subsystem;
   async function invoke(custom) {
@@ -83,7 +101,11 @@ export function moduleSession(transport) {
     },
     async close() {
       transport.abortController.abort();
-      await pipes;
+      // Release the physical writer even if its last USB transfer is pending.
+      // Closing the port can then interrupt the transfer.
+      output.releaseLock();
+      await Promise.allSettled([frames.cancel(), reader.cancel(), receiving]);
+      frames.releaseLock();
       reader.releaseLock();
       writer.releaseLock();
     },
