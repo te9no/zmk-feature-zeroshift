@@ -1,7 +1,7 @@
 import { moduleSession } from "./rpc.mjs";
 import { openWireless, wirelessAdapter } from "./wireless.mjs";
-import {usbSerial} from "./usb.mjs";
-const usb = usbSerial(navigator);
+import {usbConnection} from "./usb.mjs";
+const usb = usbConnection(navigator, new URLSearchParams(location.search).get("usb") === "device");
 const wireless = document.querySelector("#wireless");
 const target = document.querySelector("#target");
 const selectedSide = () => target.querySelector(":checked").value;
@@ -72,8 +72,8 @@ function updateControls() {
   wireless.hidden = !!session && link !== "無線";
   wireless.disabled = busy || !wirelessAdapter();
   wireless.textContent = session ? "無線切断" : "無線接続";
-  connection.disabled = busy || !usb;
-  connection.textContent = session ? "USB 切断" : "USB 接続";
+  connection.disabled = busy || !usb.requestPort;
+  connection.textContent = session ? "USB 切断" : usb.kind === "device" ? "USB デバイスを選択" : "USB 接続";
   lower.disabled = busy;
   inner.disabled = busy || !state?.innerEnabled;
   const edited = state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
@@ -157,7 +157,7 @@ async function connect(kind) {
     if (kind === "無線") {
       transport = await openWireless();
     } else {
-      const selected = await usb.requestPort({filters: [{usbVendorId: 0x1d50, usbProductId: 0x615e}]});
+      const selected = await usb.requestPort();
       port = selected;
       await selected.open({baudRate: 115200});
       if (opening !== generation) return;
@@ -266,5 +266,5 @@ form.addEventListener("submit", async (event) => {
 navigator.serial?.addEventListener("disconnect", (event) => {
   if (event.target === port) void disconnect("USB 接続が切れました。設定を確認するには再接続してください。");
 });
-if (!usb && !wirelessAdapter()) status.textContent = "USB または無線接続に対応した Chrome または Edge で開いてください。";
+if (!usb.requestPort) status.textContent = "このブラウザーでは USB デバイスを選択できません。Android ではリンクをコピーし、Chrome アプリで開いてください。";
 render(undefined);

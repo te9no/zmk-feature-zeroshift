@@ -1,9 +1,12 @@
+import {createHash} from "node:crypto";
 import {build} from "esbuild";
 import {cp, copyFile, mkdir, readFile, readdir, writeFile} from "node:fs/promises";
 await mkdir("dist", {recursive: true});
 await build({entryPoints: ["app.mjs", "rpc.mjs"], bundle: true, splitting: true, chunkNames: "studio-client", minify: true,
   outdir: "dist", format: "esm", outExtension: {".js": ".mjs"}, loader: {".proto": "text"}});
-await copyFile("index.html", "dist/index.html");
+const version = createHash("sha256").update(await readFile("dist/app.mjs")).digest("hex").slice(0, 12);
+const html = (await readFile("index.html", "utf8")).replace('src="app.mjs"', `src="app.mjs?v=${version}"`);
+await writeFile("dist/index.html", html);
 await copyFile("style.css", "dist/style.css");
 await cp("icons", "dist/icons", {recursive: true});
 
