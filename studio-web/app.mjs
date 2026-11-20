@@ -17,7 +17,7 @@ const save = document.querySelector("#save");
 const mode = {
   rzt: "RZT",
   iqs: "トラックパッド（IQS9151）",
-  tpd: "トラックパッド",
+  tpd: "Cirque タッチパッド",
   off: "オフ",
   pmw3610: "トラックボール（PMW3610）",
   lpps: "LPPS（ADS1220）",
@@ -90,12 +90,14 @@ function render(next) {
     return;
   }
 
+  const ananta = state.model === "Ananta";
+  document.querySelector("#inner-name").textContent = ananta ? "上部" : "中央側";
   const left = state.side === "left";
   side.textContent = (session?.restart ? "デモ · " : "") + (state.model || "CaGiMe") + " · " + (left ? "左側の設定" : "右側の設定");
   document.querySelector("#slot-name").textContent = state.innerEnabled ? "下側" : "拡張ソケット";
   inner.closest(".slot").hidden = !state.innerEnabled;
-  document.querySelector("#lower-connector").textContent = state.innerEnabled ? (left ? "J4" : "J7") : "";
-  document.querySelector("#inner-connector").textContent = left ? "J5" : "J8";
+  document.querySelector("#lower-connector").textContent = state.innerEnabled && !ananta ? (left ? "J4" : "J7") : "";
+  document.querySelector("#inner-connector").textContent = ananta ? "" : left ? "J5" : "J8";
   for (const group of [lower, inner]) {
     for (const input of group.querySelectorAll("input")) {
       const label = input.closest("label");
@@ -115,7 +117,7 @@ function render(next) {
 function currentStatus() {
   if (state.lower !== state.activeLower || state.inner !== state.activeInner) {
     if (session?.restart) return "デモに保存しました。「デモで再起動」を押すと、この側の起動時のドライバーが切り替わります。";
-    return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。左側をリセットした場合は 再接続してください。";
+    return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。親機をリセットした場合は再接続してください。";
   }
   if (session?.restart) return "デモの設定はこの画面内で有効です。デモを終了すると初期状態に戻ります。";
   return "本体から設定を読み取りました。";
@@ -151,7 +153,7 @@ async function disconnect(message, interrupted = false) {
 async function connect(kind) {
   if (busy) return;
   if (session) {
-    await disconnect("左側を USB または 無線 で接続してください。");
+    await disconnect("親機を USB または 無線 で接続してください。");
     return;
   }
   const opening = ++generation;
@@ -177,9 +179,9 @@ async function connect(kind) {
     transport.abortController.signal.addEventListener("abort", () => {
       if (current === session) void disconnect(transport.abortController.signal.reason?.message || "再接続してください。", true);
     }, {once: true});
-    target.querySelector("[value=left]").checked = true;
-    const next = await current.profile(selectedSide());
+    const next = await current.profile();
     if (current !== session) return;
+    target.querySelector(`[value="${next.side}"]`).checked = true;
     render(next);
     status.textContent = currentStatus();
   } catch (error) {
