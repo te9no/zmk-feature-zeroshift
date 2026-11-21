@@ -66,7 +66,7 @@ export function moduleSession(transport) {
     }
   }
   return {
-    async profile(side, modes) {
+    async profile(side, modes, display) {
       if (!subsystem) {
         const list = await invoke({listCustomSubsystems: {}});
         subsystem = list?.listCustomSubsystems?.subsystems.find(s =>
@@ -90,18 +90,27 @@ export function moduleSession(transport) {
         if (ids.length !== (singleSlot ? 1 : 2) || ids.includes(-1)) throw new Error("未対応のモジュールです。");
         operation = {set: singleSlot ? ids[0] : {lower: ids[0], inner: ids[1]}};
       }
+      if (display !== undefined) {
+        if (!modes || !polaris || side !== "left" || !capabilities.get(side)?.display ||
+            !["oled", "led4"].includes(display)) throw new Error("この側では表示モジュールを設定できません。");
+        if (display === "led4" && modes[0] === "tpd") throw new Error("左 Cirque と四連 LED は同じ端子を使用します。");
+        operation.display = display === "oled" ? 1 : 2;
+      }
       const payload = (singleSlot ? mekabuRequest : request).encode({right: side === "right", ...operation}).finish();
       const result = (await invoke({call: {subsystemIndex: index, payload}}))?.call;
       if (result?.subsystemIndex !== index) throw new Error("本体からの応答を確認できませんでした。");
-      const {saved, active, supported: mask, error} = (singleSlot ? mekabuResponse : response).decode(result.payload);
+      const {saved, active, supported: mask, savedDisplay, activeDisplay, error} = (singleSlot ? mekabuResponse : response).decode(result.payload);
       if (side === (ananta ? "left" : "right") && [-110, -116, -11].includes(error)) {
         throw new Error((ananta ? "左側" : "右側") + "の応答を確認できません。電源と左右の接続を確認して再読込してください。");
       }
       if (singleSlot) {
         const supported = mask ? modeNames.filter((_, i) => mask & (1 << i)) : legacy;
-        capabilities.set(side, {lower: supported});
+        const displays = [undefined, "oled", "led4", "inactive"];
+        const selectable = polaris && side === "left" && [1, 2].includes(savedDisplay);
+        capabilities.set(side, {lower: supported, display: selectable});
         if (error || !supported.includes(modeNames[saved]) || !supported.includes(modeNames[active])) throw new Error("設定を確認できませんでした（" + error + "）。");
         return {model: polaris ? "Polaris" : "MeKaBu", side, lower: modeNames[saved], activeLower: modeNames[active],
+          display: selectable ? displays[savedDisplay] : undefined, activeDisplay: selectable ? displays[activeDisplay] : undefined,
           innerEnabled: false, supported: {lower: supported}};
       }
       if (error || !saved || !active) throw new Error("設定を確認できませんでした（" + error + "）。");
