@@ -30,3 +30,6 @@
         };
     };
 };
+
+/* The demo stores its profile in the internal flash settings partition. */
+&qspi { status = "disabled"; };
