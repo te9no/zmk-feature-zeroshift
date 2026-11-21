@@ -16,7 +16,7 @@ MeKaBu を扱うときは、サンプルに固定した config の `config/west.
 2. config のマニフェストで依存を確認したコミットに固定する。settings と ZeroShift を有効化し、`CONFIG_ZMK_ZEROSHIFT_SLOT_COUNT` をその側のスロット数に合わせる。
 3. config で `zeroshift_mode_supported()` と `zeroshift_start_mode()` を実装する。モード 0 は無効を意味する。ピンを共有するデバイスと必要なバスは起動順を確認し、選択された経路だけを初期化する。初期化失敗は呼び出し元へ返す。両コールバックはロック中に呼ばれるので、そこから `zeroshift_profile()` を呼ぶとデッドロックする。
 4. 読み取りは `zeroshift_profile(NULL, &state)`、保存はスロット数と同じ長さの配列を渡す。RPC では受信長と各値の範囲を検証してから変換する。保存成功後の `saved`、その起動で初期化が成功した `active` を区別する。settings の準備中は `-EAGAIN` を扱う。
-5. Web UI 対応時は機種の RPC 識別子、モード番号、側ごとの対応表を照合する。新しい対応機種を追加する場合は `studio-web/rpc.mjs` の機種認識とデコード、必要な UI 項目、RPC テストも確認する。
+5. 新規対応機種は共通 Studio API の `zeroshift__v1` を使う。キーボードの config に機種名、親機側、スロット名、選択肢と保存 ID を宣言し、`zeroshift_studio_profile()` で対象側へ振り分ける。新しい機種の名前や ID を共通 Web UI に追加する必要はない。[実装方法](docs/studio-descriptor.md)
 
 ## 完了時の検証
 

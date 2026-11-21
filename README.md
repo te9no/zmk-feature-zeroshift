@@ -6,6 +6,8 @@ ZeroShift は、ZMK キーボードで拡張スロットのモードを保存し
 
 MeKaBu の左に PMW3610 トラックボール、右に PAT9125 光学エンコーダを装着する例です。左右各1本の UF2 を使い、Web UI で選んだドライバーが次回起動時に有効になるまでを実際の config で追えます。[MeKaBu の使用例](examples/mekabu/README.md) · [AI向け実装手順](AGENTS.md)
 
+新しく対応するキーボードは、機種名、親機の側、スロット名、選択肢を config に定義できます。共通 Web UI が接続時に読み取って設定画面を生成します。[キーボード側の定義と実装手順](docs/studio-descriptor.md)
+
 ## config から使う
 
 1. config の west マニフェストに依存を追加し、動作確認したコミットに固定します。

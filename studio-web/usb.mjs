@@ -58,13 +58,13 @@ export function usbConnection(browser, forceDevice = false) {
       kind: "device",
       async requestPort() {
         // ZMK exposes CDC alongside HID in a composite USB device.
-        const device = await browser.usb.requestDevice({filters: [{vendorId, productId}]});
+        const device = await browser.usb.requestDevice({filters: [{vendorId, productId}, {classCode: 2}]});
         return new StudioUsbPort(device);
       },
     };
   }
   return {
     kind: "serial",
-    requestPort: () => browser.serial.requestPort({filters: [{usbVendorId: vendorId, usbProductId: productId}]}),
+    requestPort: () => browser.serial.requestPort(),
   };
 }
