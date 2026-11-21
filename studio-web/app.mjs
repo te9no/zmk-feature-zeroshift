@@ -13,9 +13,6 @@ const status = document.querySelector("#status");
 const form = document.querySelector("#modules");
 const lower = document.querySelector("#lower");
 const inner = document.querySelector("#inner");
-const displayGroup = document.querySelector("#display-module");
-const displayChoice = () => form.elements.namedItem("displayMode").value;
-const displayNames = {oled: "OLED", led4: "四連 LED", inactive: "停止中"};
 const save = document.querySelector("#save");
 const mode = {
   rzt: "RZT",
@@ -114,16 +111,8 @@ function updateControls() {
   inner.disabled = busy || !state?.innerEnabled;
   for (const group of describedSlots.children) group.disabled = busy;
   const edited = state?.slots ? selections().some((id, i) => id !== state.slots[i].saved) : state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
-  displayGroup.disabled = busy;
-  const displayEdited = state?.display && displayChoice() !== state.display;
-  const cirque = state?.display && form.elements.namedItem("lowerMode").value === "tpd";
-  const conflict = cirque && displayChoice() === "led4";
-  save.disabled = busy || !(edited || displayEdited) || conflict;
-  document.querySelector("#display-state").textContent = state?.display
-    ? "起動中：" + (displayNames[state.activeDisplay] ?? "不明") +
-      (conflict ? "。左 Cirque と四連 LED は同じ端子を使うため併用できません。" :
-       cirque ? "。左 Cirque 使用時は OLED が停止します。" : "") : "";
-  document.querySelector("#edit-state").textContent = edited || displayEdited ? "未保存の変更あり" : "";
+  save.disabled = busy || !edited;
+  document.querySelector("#edit-state").textContent = edited ? "未保存の変更あり" : "";
 }
 
 function render(next) {
@@ -135,8 +124,6 @@ function render(next) {
     return;
   }
 
-  displayGroup.hidden = !state.display;
-  if (state.display) form.elements.namedItem("displayMode").value = drafts.get(state.side)?.display ?? state.display;
   const ananta = state.model === "Ananta";
   document.querySelector("#inner-name").textContent = ananta ? "上部" : "中央側";
   const left = state.side === "left";
@@ -169,11 +156,7 @@ function render(next) {
 }
 
 function currentStatus() {
-  if (state.display && state.activeDisplay === "inactive" && state.lower === state.activeLower &&
-      state.lower !== "tpd") return "表示モジュールは停止中です。選択した基板の取り付けを確認し、左手を再起動してください。";
-  const cirqueOwnsDisplayPin = state.lower === "tpd" && state.activeDisplay === "inactive";
-  if (state.slots?.some(slot => slot.saved !== slot.active) || state.lower !== state.activeLower || state.inner !== state.activeInner ||
-      (state.display && !cirqueOwnsDisplayPin && state.display !== state.activeDisplay)) {
+  if (state.slots?.some(slot => slot.saved !== slot.active) || state.lower !== state.activeLower || state.inner !== state.activeInner) {
     if (session?.restart) return "デモに保存しました。「デモで再起動」を押すと、この側の起動時のドライバーが切り替わります。";
     return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。親機をリセットした場合は再接続してください。";
   }
@@ -305,7 +288,7 @@ form.addEventListener("change", ({target: input}) => {
     updateControls();
     return;
   }
-  const slot = input.name === "displayMode" ? "display" : input.closest(".slot").id;
+  const slot = input.closest(".slot").id;
   const draft = drafts.get(state.side) ?? {};
   if (input.value === state[slot]) delete draft[slot];
   else draft[slot] = input.value;
@@ -319,7 +302,7 @@ form.addEventListener("submit", async (event) => {
   updateControls();
   const current = session;
   try {
-    const next = await current.profile(selectedSide(), state.slots ? selections() : state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value], state.display ? displayChoice() : undefined);
+    const next = await current.profile(selectedSide(), state.slots ? selections() : state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value]);
     if (current !== session) return;
     drafts.delete(next.side);
     render(next);
