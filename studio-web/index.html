@@ -16,7 +16,7 @@
     <div class="workspace">
       <section class="connect" aria-labelledby="heading">
         <div class="title-row"><h1 id="heading">モジュール設定</h1><strong id="side">未接続</strong></div>
-        <p id="status" role="status">親機を接続してください。Ananta は右側、ほかの対応機種は左側です。</p>
+        <p id="status" role="status">キーボードの親機を接続してください。</p>
         <div class="bar">
           <button type="button" id="connection">USB 接続</button>
           <button type="button" id="wireless">無線接続</button>
@@ -24,7 +24,7 @@
         </div>
         <details id="help">
           <summary>接続方法</summary>
-          <p>USB は親機（Ananta は右側、ほかの機種は左側）をデータ通信対応ケーブルで接続します。Android は USB デバイスを選択し、アクセスを許可してください。PC は Studio 用ポートを選びます。Android でシリアルポートの画面が開く場合は <a href="?usb=device">USB デバイス選択に切り替えてください</a>。無線では親機を PC とペアリングし、接続候補から機種名を選んでください。</p>
+          <p>USB は親機をデータ通信対応ケーブルで接続します。Android は USB デバイスを選択し、アクセスを許可してください。PC は Studio 用ポートを選びます。Android でシリアルポートの画面が開く場合は <a href="?usb=device">USB デバイス選択に切り替えてください</a>。無線では親機を PC とペアリングし、接続候補から機種名を選んでください。</p>
           <p>CaGiMe が無線の候補に出ないときは、標準配列の左側で Esc を押しながら U を押します。</p>
         </details>
       </section>
@@ -38,7 +38,8 @@
         <button type="button" id="restart" hidden>デモで再起動</button>
       </section>
     <form hidden id="modules">
-      <div class="slots">
+      <div class="slots" id="described-slots" hidden></div>
+      <div class="slots" id="legacy-slots">
         <fieldset class="slot" id="lower" aria-describedby="lower-state">
           <legend><b id="slot-name">下側</b> <span id="lower-connector"></span></legend>
           <div class="choices">

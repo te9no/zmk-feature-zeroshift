@@ -1,3 +1,4 @@
+import {parseDescriptor, describedProfile} from "./descriptor.mjs";
 import {Request, Response} from "./node_modules/@zmkfirmware/zmk-studio-ts-client/src/studio.ts";
 import {get_encoder, get_decoder} from "./node_modules/@zmkfirmware/zmk-studio-ts-client/src/framing.ts";
 import protobuf from "protobufjs";
@@ -48,6 +49,7 @@ export function moduleSession(transport) {
   void sendFrames();
   let sequence = 0;
   let subsystem;
+  let descriptor;
   const capabilities = new Map();
   async function invoke(custom) {
     const requestId = ++sequence;
@@ -69,9 +71,19 @@ export function moduleSession(transport) {
     async profile(side, modes, display) {
       if (!subsystem) {
         const list = await invoke({listCustomSubsystems: {}});
-        subsystem = list?.listCustomSubsystems?.subsystems.find(s =>
+        const available = list?.listCustomSubsystems?.subsystems ?? [];
+        subsystem = available.find(s => s.identifier === "zeroshift__v1") ?? available.find(s =>
           ["cagime__modules", "mekabu__modules", "polaris__modules", "saa__modules"].includes(s.identifier));
         if (!subsystem) throw new Error("ZeroShift 対応の親機ファームウェアを確認してください。");
+      }
+      if (subsystem.identifier === "zeroshift__v1") {
+        const call = async payload => {
+          const reply = (await invoke({call: {subsystemIndex: subsystem.index, payload}}))?.call;
+          if (reply?.subsystemIndex !== subsystem.index) throw new Error("本体からの応答を確認できませんでした。");
+          return reply.payload;
+        };
+        descriptor ??= parseDescriptor(await call(Uint8Array.of(0)));
+        return describedProfile(call, descriptor, side, modes);
       }
       const ananta = subsystem.identifier === "saa__modules";
       const polaris = subsystem.identifier === "polaris__modules";

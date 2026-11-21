@@ -60,6 +60,39 @@ let state;
 let busy = false;
 let generation = 0;
 const drafts = new Map();
+const describedSlots = document.querySelector("#described-slots");
+
+function selections() {
+  return Array.from(describedSlots.querySelectorAll("input:checked"), input => Number(input.value));
+}
+
+function renderSlots(slots) {
+  describedSlots.replaceChildren();
+  slots.forEach(({label, modes, saved, active}, index) => {
+    const group = document.createElement("fieldset");
+    group.className = "slot";
+    const legend = document.createElement("legend");
+    legend.textContent = label;
+    const choices = document.createElement("div");
+    choices.className = "choices";
+    for (const [id, name] of modes) {
+      const option = document.createElement("label");
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "slot-" + index;
+      radio.value = id;
+      radio.checked = id === (drafts.get(state.side)?.[index] ?? saved);
+      const text = document.createElement("span");
+      text.textContent = name;
+      option.append(radio, text);
+      choices.append(option);
+    }
+    const summary = document.createElement("small");
+    summary.textContent = "起動中：" + modes.find(([id]) => id === active)[1];
+    group.append(legend, choices, summary);
+    describedSlots.append(group);
+  });
+}
 
 function updateControls() {
   document.querySelector("#target-bar").hidden = !session;
@@ -79,7 +112,8 @@ function updateControls() {
   connection.textContent = session ? "USB 切断" : usb.kind === "device" ? "USB デバイスを選択" : "USB 接続";
   lower.disabled = busy;
   inner.disabled = busy || !state?.innerEnabled;
-  const edited = state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
+  for (const group of describedSlots.children) group.disabled = busy;
+  const edited = state?.slots ? selections().some((id, i) => id !== state.slots[i].saved) : state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
   displayGroup.disabled = busy;
   const displayEdited = state?.display && displayChoice() !== state.display;
   const cirque = state?.display && form.elements.namedItem("lowerMode").value === "tpd";
@@ -107,6 +141,13 @@ function render(next) {
   document.querySelector("#inner-name").textContent = ananta ? "上部" : "中央側";
   const left = state.side === "left";
   side.textContent = (session?.restart ? "デモ · " : "") + (state.model || "CaGiMe") + " · " + (left ? "左側の設定" : "右側の設定");
+  describedSlots.hidden = !state.slots;
+  document.querySelector("#legacy-slots").hidden = !!state.slots;
+  if (state.slots) {
+    renderSlots(state.slots);
+    updateControls();
+    return;
+  }
   document.querySelector("#slot-name").textContent = state.innerEnabled ? "下側" : "拡張ソケット";
   inner.closest(".slot").hidden = !state.innerEnabled;
   document.querySelector("#lower-connector").textContent = state.innerEnabled && !ananta ? (left ? "J4" : "J7") : "";
@@ -131,7 +172,7 @@ function currentStatus() {
   if (state.display && state.activeDisplay === "inactive" && state.lower === state.activeLower &&
       state.lower !== "tpd") return "表示モジュールは停止中です。選択した基板の取り付けを確認し、左手を再起動してください。";
   const cirqueOwnsDisplayPin = state.lower === "tpd" && state.activeDisplay === "inactive";
-  if (state.lower !== state.activeLower || state.inner !== state.activeInner ||
+  if (state.slots?.some(slot => slot.saved !== slot.active) || state.lower !== state.activeLower || state.inner !== state.activeInner ||
       (state.display && !cirqueOwnsDisplayPin && state.display !== state.activeDisplay)) {
     if (session?.restart) return "デモに保存しました。「デモで再起動」を押すと、この側の起動時のドライバーが切り替わります。";
     return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。親機をリセットした場合は再接続してください。";
@@ -259,6 +300,11 @@ reload.addEventListener("click", readTarget);
 
 form.addEventListener("change", ({target: input}) => {
   if (!state || !input.matches("input[type=radio]")) return;
+  if (state.slots) {
+    drafts.set(state.side, selections());
+    updateControls();
+    return;
+  }
   const slot = input.name === "displayMode" ? "display" : input.closest(".slot").id;
   const draft = drafts.get(state.side) ?? {};
   if (input.value === state[slot]) delete draft[slot];
@@ -273,7 +319,7 @@ form.addEventListener("submit", async (event) => {
   updateControls();
   const current = session;
   try {
-    const next = await current.profile(selectedSide(), state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value], state.display ? displayChoice() : undefined);
+    const next = await current.profile(selectedSide(), state.slots ? selections() : state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value], state.display ? displayChoice() : undefined);
     if (current !== session) return;
     drafts.delete(next.side);
     render(next);

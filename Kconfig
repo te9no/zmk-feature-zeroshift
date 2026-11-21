@@ -7,6 +7,10 @@ menuconfig ZMK_ZEROSHIFT
 
 if ZMK_ZEROSHIFT
 
+config ZMK_ZEROSHIFT_STUDIO
+    bool "Expose keyboard-defined slots to ZeroShift Studio UI"
+    depends on ZMK_STUDIO_RPC
+
 config ZMK_ZEROSHIFT_SLOT_COUNT
     int "Number of local slots"
     range 1 255
