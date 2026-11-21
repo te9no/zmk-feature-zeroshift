@@ -4,7 +4,7 @@ ZeroShift は、ZMK キーボードで拡張スロットのモードを保存し
 
 ## 実装例
 
-XIAO nRF52840 で、クリック用ボタンの有効・無効を保存し、次回起動時に適用する例です。配線、ソース、ビルド、操作手順をまとめています。[1スロットのサンプル](examples/one-slot/README.md) · [AI向け実装手順](AGENTS.md)
+MeKaBu の左に PMW3610 トラックボール、右に PAT9125 光学エンコーダを装着する例です。左右各1本の UF2 を使い、Web UI で選んだドライバーが次回起動時に有効になるまでを実際の config で追えます。[MeKaBu の使用例](examples/mekabu/README.md) · [AI向け実装手順](AGENTS.md)
 
 ## config から使う
 
@@ -50,7 +50,7 @@ int err = zeroshift_profile(NULL, &state);      // 現在値を読み取る
 
 ## Web UI
 
-接続した左側のファームウェアから機種を自動判別します。[CaGiMe](https://github.com/te9no/zmk-config-CaGiMe#初回の書き込み) は左右各2スロット、[MeKaBu の ZeroShift 対応版](https://github.com/te9no/zmk-config-MKB2/tree/feat/zeroshift-modules) は左右各1スロットを設定できます。
+接続した左側のファームウェアから機種を自動判別します。[CaGiMe](https://github.com/te9no/zmk-config-CaGiMe#初回の書き込み) は左右各2スロット、[MeKaBu の ZeroShift 対応版](https://github.com/te9no/zmk-config-MKB2/tree/feat/zeroshift-common-modules) は左右各1スロットを設定できます。
 
 Chrome または Edge で [ZeroShift 設定画面](https://te9no.github.io/zmk-feature-zeroshift/) を開きます。**右側を設定するときも、PC の接続先は左側です。**
 

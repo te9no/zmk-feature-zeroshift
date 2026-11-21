@@ -1,6 +1,0 @@
-if SHIELD_ZEROSHIFT_DEMO
-
-config ZMK_KEYBOARD_NAME
-    default "ZeroShift Demo"
-
-endif

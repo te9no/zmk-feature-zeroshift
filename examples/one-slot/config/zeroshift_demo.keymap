@@ -1,6 +1,0 @@
-/ {
-    keymap {
-        compatible = "zmk,keymap";
-        base { bindings = <&save_mode 0 &save_mode 1>; };
-    };
-};

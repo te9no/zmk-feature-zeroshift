@@ -1,12 +1,14 @@
 # ZeroShift を変更・導入する AI エージェントへ
 
-最初に [公開 API](include/zeroshift/profile.h)、[保存・起動処理](src/profile.c)、[1スロットの実装例](examples/one-slot/README.md)を読む。対象キーボードの既存の west マニフェスト、シールド、左右の親子関係、使用中の開発ブランチを確認する。
+最初に [公開 API](include/zeroshift/profile.h)、[保存・起動処理](src/profile.c)、[MeKaBu の実装例](examples/mekabu/README.md)を読む。対象キーボードの既存の west マニフェスト、シールド、左右の親子関係、使用中の開発ブランチを確認する。
 
 ## 変更を置く場所
 
 - ZeroShift コアは各スロットのモード ID の検証、永続化、起動時適用を担当する。
 - 機種名、ピン、バス、スロット構成、ドライバー、モード ID の意味はキーボードの config に置く。サンプルは明示的に選んだビルドでのみコンパイルする。
 - 分割機では各側にローカルのプロファイルがある。Web UI からの要求を親機で受け、子機の設定は対象側へ中継し、その側の応答を返す。親機が左右どちらかを既存のシールドで確認する。
+
+MeKaBu を扱うときは、サンプルに固定した config の `config/west.yml` で ZeroShift のリビジョンを確認する。左右ともローカルのスロット番号は 0。右への要求は `src/zeroshift/modules_rpc.c` から `modules_relay.c` を通る。モードの追加・変更時は config の列挙値、RPC の対応ビット、Web UI の `mekabuModes` の順序を照合する。
 
 ## キーボード側の実装順
 

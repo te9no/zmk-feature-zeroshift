@@ -1,0 +1,3 @@
+[submodule "examples/mekabu/keyboard-config"]
+	path = examples/mekabu/keyboard-config
+	url = https://github.com/te9no/zmk-config-MKB2.git
