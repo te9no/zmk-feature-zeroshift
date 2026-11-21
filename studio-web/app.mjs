@@ -3,6 +3,8 @@ import { openWireless, wirelessAdapter } from "./wireless.mjs";
 import {usbConnection} from "./usb.mjs";
 const usb = usbConnection(navigator, new URLSearchParams(location.search).get("usb") === "device");
 const wireless = document.querySelector("#wireless");
+const wirelessName = document.querySelector("#wireless-name");
+wirelessName.value = new URLSearchParams(location.search).get("name") ?? "";
 const target = document.querySelector("#target");
 const selectedSide = () => target.querySelector(":checked").value;
 const reload = document.querySelector("#reload");
@@ -102,6 +104,8 @@ function updateControls() {
   demo.textContent = inDemo ? "デモを終了" : "デモモード";
   restart.hidden = !inDemo;
   connection.hidden = !!session && link !== "USB";
+  wirelessName.parentElement.hidden = !!session || !wirelessAdapter();
+  wirelessName.disabled = busy;
   wireless.hidden = !!session && link !== "無線";
   wireless.disabled = busy || !wirelessAdapter();
   wireless.textContent = session ? "無線切断" : "無線接続";
@@ -204,7 +208,7 @@ async function connect(kind) {
     link = kind;
     let transport;
     if (kind === "無線") {
-      transport = await openWireless();
+      transport = await openWireless(wirelessName.value);
     } else {
       const selected = await usb.requestPort();
       port = selected;
