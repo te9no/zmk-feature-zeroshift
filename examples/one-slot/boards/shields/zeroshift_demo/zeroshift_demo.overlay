@@ -1,0 +1,32 @@
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+    chosen { zmk,kscan = &mode_keys; };
+
+    mode_keys: mode-keys {
+        compatible = "zmk,kscan-gpio-direct";
+        input-gpios = <&xiao_d 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>,
+                      <&xiao_d 1 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+
+    slot_button: slot-button {
+        compatible = "gpio-keys";
+        zephyr,deferred-init;
+        click {
+            gpios = <&xiao_d 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            zephyr,code = <INPUT_BTN_0>;
+        };
+    };
+
+    click-listener {
+        compatible = "zmk,input-listener";
+        device = <&slot_button>;
+    };
+
+    behaviors {
+        save_mode: save-mode {
+            compatible = "zeroshift-demo,save-mode";
+            #binding-cells = <1>;
+        };
+    };
+};

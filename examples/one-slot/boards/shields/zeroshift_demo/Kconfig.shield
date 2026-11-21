@@ -1,0 +1,2 @@
+config SHIELD_ZEROSHIFT_DEMO
+    def_bool $(shields_list_contains,zeroshift_demo)

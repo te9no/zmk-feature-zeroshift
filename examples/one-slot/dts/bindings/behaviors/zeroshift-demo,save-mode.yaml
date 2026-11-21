@@ -1,0 +1,3 @@
+description: Save the demo slot's requested mode
+compatible: "zeroshift-demo,save-mode"
+include: one_param.yaml
