@@ -33,3 +33,4 @@
 
 /* The demo stores its profile in the internal flash settings partition. */
 &qspi { status = "disabled"; };
+&p25q16h { status = "disabled"; };
