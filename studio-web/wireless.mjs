@@ -6,9 +6,12 @@ export function wirelessAdapter() {
   return navigator[["blue", "tooth"].join("")];
 }
 
-export async function openWireless() {
+export async function openWireless(namePrefix = "") {
+  const prefix = namePrefix.trim();
+  // Existing ZMK centrals advertise Battery Service and expose Studio after connection.
+  const filters = prefix ? [{namePrefix: prefix}] : [{services: [service]}, {services: [0x180f]}];
   const device = await wirelessAdapter().requestDevice({
-    acceptAllDevices: true,
+    filters,
     optionalServices: [service],
   });
   const abortController = new AbortController();
