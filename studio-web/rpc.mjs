@@ -82,7 +82,7 @@ export function moduleSession(transport) {
           return reply.payload;
         };
         descriptor ??= parseDescriptor(await call(Uint8Array.of(0)));
-        return describedProfile(call, descriptor, side, modes);
+        return {...await describedProfile(call, descriptor, side, modes), central: descriptor.central};
       }
       const ananta = subsystem.identifier === "saa__modules";
       side ??= ananta ? "right" : "left";

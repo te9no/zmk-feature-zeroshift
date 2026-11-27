@@ -1,10 +1,12 @@
 import { moduleSession } from "./rpc.mjs";
 import { openWireless, wirelessAdapter } from "./wireless.mjs";
 import {usbConnection} from "./usb.mjs";
-const usb = usbConnection(navigator, new URLSearchParams(location.search).get("usb") === "device");
+import {centralSide, modeLabel, needsRestart, slotsOf} from "./view.mjs";
+const query = new URLSearchParams(location.search);
+const usb = usbConnection(navigator, query.get("usb") === "device");
 const wireless = document.querySelector("#wireless");
 const wirelessName = document.querySelector("#wireless-name");
-wirelessName.value = new URLSearchParams(location.search).get("name") ?? "";
+wirelessName.value = query.get("name") ?? "";
 const target = document.querySelector("#target");
 const selectedSide = () => target.querySelector(":checked").value;
 const reload = document.querySelector("#reload");
@@ -13,39 +15,44 @@ const connection = document.querySelector("#connection");
 const side = document.querySelector("#side");
 const status = document.querySelector("#status");
 const form = document.querySelector("#modules");
-const lower = document.querySelector("#lower");
-const inner = document.querySelector("#inner");
+const slotList = document.querySelector("#slots");
 const save = document.querySelector("#save");
-const mode = {
-  rzt: "RZT",
-  iqs: "トラックパッド（IQS9151）",
-  tpd: "Cirque タッチパッド",
-  off: "オフ",
-  pmw3610: "トラックボール（PMW3610）",
-  lpps: "LPPS（ADS1220）",
-  encoder: "エンコーダ",
-  pat9125: "光学エンコーダ（PAT9125）",
-  stick: "アナログスティック",
-  key: "1uキー",
-};
+const discard = document.querySelector("#discard");
+const pending = document.querySelector("#pending");
 const demo = document.querySelector("#demo");
 const restart = document.querySelector("#restart");
 const initialStatus = status.textContent;
+const sideName = value => value === "left" ? "左側" : "右側";
 
+function setStatus(text, tone = "info") {
+  status.textContent = text;
+  status.dataset.tone = tone;
+}
+
+// ?demo=described previews a keyboard that describes its own slots.
 function demoSession() {
+  const input = ["オフ", "トラックボール（PMW3610）", "アナログスティック", "エンコーダ", "Cirque タッチパッド",
+    "LPPS（ADS1220）", "トラックパッド（IQS9151）", "1u キー", "光学エンコーダ（PAT9125）"].map((name, id) => [id, name]);
+  const described = query.get("demo") === "described" && {
+    left: [{label: "入力モジュール", modes: input}, {label: "表示モジュール", modes: [[0, "標準（OLED）"], [1, "四連 LED"]]}],
+    right: [{label: "入力モジュール", modes: input.filter(([id]) => id !== 2)}],
+  };
   const profiles = {};
   for (const side of ["left", "right"]) {
-    profiles[side] = {side, lower: "off", inner: "off", activeLower: "off", activeInner: "off",
-      innerEnabled: true, allModules: true};
+    profiles[side] = described
+      ? {model: "Polaris", side, central: "left", slots: described[side].map(slot => ({...slot, saved: 0, active: 0}))}
+      : {side, lower: "off", inner: "off", activeLower: "off", activeInner: "off", innerEnabled: true, allModules: true};
   }
   return {
     profile(side, modes) {
       const profile = profiles[side];
-      if (modes) [profile.lower, profile.inner] = modes;
-      return {...profile};
+      if (modes && described) profile.slots.forEach((slot, i) => slot.saved = modes[i]);
+      else if (modes) [profile.lower, profile.inner] = modes;
+      return {...profile, slots: profile.slots?.map(slot => ({...slot}))};
     },
     restart(side) {
       const profile = profiles[side];
+      profile.slots?.forEach(slot => slot.active = slot.saved);
       profile.activeLower = profile.lower;
       profile.activeInner = profile.inner;
     },
@@ -56,53 +63,86 @@ let link;
 let port;
 let session;
 let state;
+let view = [];
 let busy = false;
 let generation = 0;
 const drafts = new Map();
-const describedSlots = document.querySelector("#described-slots");
 
 function selections() {
-  return Array.from(describedSlots.querySelectorAll("input:checked"), input => Number(input.value));
-}
-
-function renderSlots(slots) {
-  describedSlots.replaceChildren();
-  slots.forEach(({label, modes, saved, active}, index) => {
-    const group = document.createElement("fieldset");
-    group.className = "slot";
-    const legend = document.createElement("legend");
-    legend.textContent = label;
-    const choices = document.createElement("div");
-    choices.className = "choices";
-    for (const [id, name] of modes) {
-      const option = document.createElement("label");
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "slot-" + index;
-      radio.value = id;
-      radio.checked = id === (drafts.get(state.side)?.[index] ?? saved);
-      const text = document.createElement("span");
-      text.textContent = name;
-      option.append(radio, text);
-      choices.append(option);
-    }
-    const summary = document.createElement("small");
-    summary.textContent = "起動中：" + (modes.find(([id]) => id === active)?.[1] ?? "ID " + active);
-    group.append(legend, choices, summary);
-    describedSlots.append(group);
+  return view.map((slot, i) => {
+    const checked = slotList.querySelector(`input[name="slot-${i}"]:checked`);
+    return checked ? slot.modes[Number(checked.value)].id : slot.saved;
   });
 }
 
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderSlots() {
+  const draft = drafts.get(state.side);
+  slotList.replaceChildren(...view.map((slot, index) => {
+    const group = element("fieldset", "slot");
+    const legend = element("legend");
+    legend.append(element("b", "", slot.label));
+    if (slot.connector) legend.append(element("span", "connector", slot.connector));
+    const running = element("p", "running", "起動中：");
+    running.append(element("b", "", modeLabel(slot.activeMode)));
+    const waiting = slot.saved !== slot.active && slot.modes.find(mode => mode.id === slot.saved);
+    const choices = element("div", "choices");
+    slot.modes.forEach((mode, choice) => {
+      const option = element("label");
+      const radio = element("input");
+      radio.type = "radio";
+      radio.name = "slot-" + index;
+      radio.value = choice;
+      radio.checked = mode.id === (draft?.[index] ?? slot.saved);
+      const card = element("span", "card");
+      const icon = element("img", "module-icon");
+      icon.src = "icons/" + mode.icon + (mode.icon === "module" ? ".svg" : ".png");
+      icon.width = icon.height = 32;
+      icon.alt = "";
+      card.append(icon, element("span", "name", mode.name));
+      if (mode.detail) card.append(element("small", "", mode.detail));
+      if (mode.id === slot.active) card.append(element("em", "badge running-badge", "起動中"));
+      else if (mode === waiting) card.append(element("em", "badge", "リセット後に有効"));
+      option.append(radio, card);
+      choices.append(option);
+    });
+    group.append(legend, running, choices);
+    return group;
+  }));
+}
+
+function renderPending() {
+  pending.hidden = !needsRestart(view);
+  if (pending.hidden) return;
+  const name = sideName(state.side);
+  const inDemo = !!session?.restart;
+  document.querySelector("#pending-title").textContent = name + "のリセットで切り替わります";
+  document.querySelector("#pending-steps").textContent = inDemo
+    ? "「デモで再起動」を押すと、保存したモジュールで起動した状態になります。"
+    : state.side === centralSide(state)
+      ? name + "は親機なので、リセットすると接続が切れます。起動したらもう一度接続し、保存したモジュールが「起動中」になったことを確認してください。"
+      : name + "をリセットし、左右がつながってから「再読込」を押して、保存したモジュールが「起動中」になったことを確認してください。";
+  restart.hidden = !inDemo;
+}
+
 function updateControls() {
+  const inDemo = !!session?.restart;
+  const edited = !!state && drafts.has(state.side);
+  document.querySelector(".connect").toggleAttribute("data-compact", !!session);
   document.querySelector("#target-bar").hidden = !session;
   document.querySelector("#help").hidden = !!session;
   side.dataset.connected = String(!!state);
   target.disabled = reload.disabled = busy;
-  const inDemo = !!session?.restart;
+  for (const input of target.querySelectorAll("input")) input.nextElementSibling.querySelector("em").hidden = !drafts.has(input.value);
   demo.hidden = !!session && !inDemo;
   demo.disabled = restart.disabled = busy;
   demo.textContent = inDemo ? "デモを終了" : "デモモード";
-  restart.hidden = !inDemo;
   connection.hidden = !!session && link !== "USB";
   wirelessName.parentElement.hidden = !!session || !wirelessAdapter();
   wirelessName.disabled = busy;
@@ -111,65 +151,38 @@ function updateControls() {
   wireless.textContent = session ? "無線切断" : "無線接続";
   connection.disabled = busy || !usb.requestPort;
   connection.textContent = session ? "USB 切断" : usb.kind === "device" ? "USB デバイスを選択" : "USB 接続";
-  lower.disabled = busy;
-  inner.disabled = busy || !state?.innerEnabled;
-  for (const group of describedSlots.children) group.disabled = busy;
-  const edited = state?.slots ? selections().some((id, i) => id !== state.slots[i].saved) : state && (form.elements.namedItem("lowerMode").value !== state.lower || (state.innerEnabled && form.elements.namedItem("innerMode").value !== state.inner));
+  document.querySelector("#support").hidden = !!session || !document.querySelector("#support").textContent;
+  form.setAttribute("aria-busy", String(busy));
+  for (const group of slotList.children) group.disabled = busy;
   save.disabled = busy || !edited;
-  document.querySelector("#edit-state").textContent = edited ? "未保存の変更あり" : "";
+  discard.hidden = !edited;
+  discard.disabled = busy;
+  document.querySelector("#edit-state").textContent = edited ? "未保存の変更があります" : "";
 }
 
 function render(next) {
   state = next;
   form.hidden = !state;
   if (!state) {
+    view = [];
     side.textContent = session ? link + " 接続中" : "未接続";
     updateControls();
     return;
   }
-
-  const ananta = state.model === "Ananta";
-  document.querySelector("#inner-name").textContent = ananta ? "上部" : "中央側";
-  const left = state.side === "left";
-  side.textContent = (session?.restart ? "デモ · " : "") + (state.model || "CaGiMe") + " · " + (left ? "左側の設定" : "右側の設定");
-  describedSlots.hidden = !state.slots;
-  document.querySelector("#legacy-slots").hidden = !!state.slots;
-  if (state.slots) {
-    renderSlots(state.slots);
-    updateControls();
-    return;
-  }
-  document.querySelector("#slot-name").textContent = state.innerEnabled ? "下側" : "拡張ソケット";
-  inner.closest(".slot").hidden = !state.innerEnabled;
-  document.querySelector("#lower-connector").textContent = state.innerEnabled && !ananta ? (left ? "J4" : "J7") : "";
-  document.querySelector("#inner-connector").textContent = ananta ? "" : left ? "J5" : "J8";
-  for (const group of [lower, inner]) {
-    for (const input of group.querySelectorAll("input")) {
-      const label = input.closest("label");
-      // Always show the stored choice so firmware without a capability list can keep it.
-      const allowed = input.value === state[group.id] || (state.supported ? state.supported[group.id]?.includes(input.value)
-        : !label.hasAttribute("data-mekabu") && (!label.hasAttribute("data-extended") || !!session?.restart));
-      label.hidden = input.disabled = !allowed;
-      input.checked = input.value === (drafts.get(state.side)?.[group.id] ?? state[group.id]);
-    }
-  }
-  document.querySelector("#lower-state").textContent = "起動中：" + mode[state.activeLower];
-  document.querySelector("#inner-state").textContent = state.innerEnabled
-    ? "起動中：" + mode[state.activeInner]
-    : "このファームウェアでは中央側を設定できません。";
+  view = slotsOf(state, {demo: !!session?.restart});
+  side.textContent = (state.model || "CaGiMe") + " · " + link;
+  renderSlots();
+  renderPending();
   updateControls();
 }
 
 function currentStatus() {
-  if (state.slots?.some(slot => slot.saved !== slot.active) || state.lower !== state.activeLower || state.inner !== state.activeInner) {
-    if (session?.restart) return "デモに保存しました。「デモで再起動」を押すと、この側の起動時のドライバーが切り替わります。";
-    return "保存済みの設定を反映するには、設定した側をリセットして、再読込してください。親機をリセットした場合は再接続してください。";
-  }
+  if (needsRestart(view)) return "保存した設定は、" + sideName(state.side) + "をリセットすると有効になります。";
   if (session?.restart) return "デモの設定はこの画面内で有効です。デモを終了すると初期状態に戻ります。";
-  return "本体から設定を読み取りました。";
+  return sideName(state.side) + "の設定を本体から読み取りました。";
 }
 
-async function disconnect(message, interrupted = false) {
+async function disconnect(message, interrupted = false, tone = interrupted ? "error" : "info") {
   const closing = ++generation;
   busy = true;
   drafts.clear();
@@ -178,7 +191,7 @@ async function disconnect(message, interrupted = false) {
   const oldPort = port;
   port = undefined;
   render(undefined);
-  status.textContent = message.replaceAll(new RegExp(["blue", "tooth"].join(""), "gi"), "無線");
+  setStatus(message.replaceAll(new RegExp(["blue", "tooth"].join(""), "gi"), "無線"), tone);
   try {
     await previous?.close();
   } finally {
@@ -199,7 +212,7 @@ async function disconnect(message, interrupted = false) {
 async function connect(kind) {
   if (busy) return;
   if (session) {
-    await disconnect("親機を USB または 無線 で接続してください。");
+    await disconnect("切断しました。" + initialStatus);
     return;
   }
   const opening = ++generation;
@@ -219,7 +232,7 @@ async function connect(kind) {
       if (opening !== generation) return;
       transport = {readable: port.readable, writable: port.writable, abortController: new AbortController()};
     }
-    status.textContent = "本体の設定を読み取っています。";
+    setStatus("本体の設定を読み取っています。");
     const current = moduleSession(transport);
     session = current;
     transport.abortController.signal.addEventListener("abort", () => {
@@ -229,10 +242,12 @@ async function connect(kind) {
     if (current !== session) return;
     target.querySelector(`[value="${next.side}"]`).checked = true;
     render(next);
-    status.textContent = currentStatus();
+    setStatus(currentStatus());
   } catch (error) {
     if (opening !== generation) return;
-    await disconnect(error.name === "NotFoundError" ? "接続先を確認してください。無線の場合はキーボード名を選びます。" : error.message);
+    // Closing the browser's device chooser is not a failure.
+    if (error.name === "NotFoundError") await disconnect("接続先が選ばれませんでした。親機を選んでください。無線の場合はキーボード名を選びます。");
+    else await disconnect(error.message, false, "error");
   } finally {
     if (opening === generation) {
       busy = false;
@@ -246,7 +261,7 @@ demo.addEventListener("click", () => {
     session = undefined;
     drafts.clear();
     render(undefined);
-    status.textContent = initialStatus;
+    setStatus(initialStatus);
     return;
   }
   if (session) return;
@@ -254,7 +269,7 @@ demo.addEventListener("click", () => {
   session = demoSession();
   target.querySelector("[value=left]").checked = true;
   render(session.profile(selectedSide()));
-  status.textContent = currentStatus();
+  setStatus(currentStatus());
 });
 restart.addEventListener("click", () => {
   if (busy || !session?.restart) return;
@@ -268,14 +283,18 @@ async function readTarget() {
   if (busy || !session) return;
   const current = session;
   busy = true;
-  render(undefined);
+  // Keep the previous cards in place, dimmed, so the page does not jump while reading.
+  updateControls();
+  setStatus(sideName(selectedSide()) + "の設定を読み取っています。");
   try {
     const next = await current.profile(selectedSide());
     if (current !== session) return;
     render(next);
-    status.textContent = currentStatus();
+    setStatus(currentStatus());
   } catch (error) {
-    if (current === session) status.textContent = error.message;
+    if (current !== session) return;
+    render(undefined);
+    setStatus(error.message, "error");
   } finally {
     if (current === session) {
       busy = false;
@@ -288,17 +307,16 @@ reload.addEventListener("click", readTarget);
 
 form.addEventListener("change", ({target: input}) => {
   if (!state || !input.matches("input[type=radio]")) return;
-  if (state.slots) {
-    drafts.set(state.side, selections());
-    updateControls();
-    return;
-  }
-  const slot = input.closest(".slot").id;
-  const draft = drafts.get(state.side) ?? {};
-  if (input.value === state[slot]) delete draft[slot];
-  else draft[slot] = input.value;
-  drafts.set(state.side, draft);
+  const chosen = selections();
+  if (chosen.every((id, i) => id === view[i].saved)) drafts.delete(state.side);
+  else drafts.set(state.side, chosen);
   updateControls();
+});
+discard.addEventListener("click", () => {
+  if (busy || !state) return;
+  drafts.delete(state.side);
+  render(state);
+  save.focus();
 });
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -307,13 +325,13 @@ form.addEventListener("submit", async (event) => {
   updateControls();
   const current = session;
   try {
-    const next = await current.profile(selectedSide(), state.slots ? selections() : state.innerEnabled ? [form.elements.namedItem("lowerMode").value, form.elements.namedItem("innerMode").value] : [form.elements.namedItem("lowerMode").value]);
+    const next = await current.profile(selectedSide(), selections());
     if (current !== session) return;
     drafts.delete(next.side);
     render(next);
-    status.textContent = currentStatus();
+    setStatus(needsRestart(view) ? "保存しました。" + currentStatus() : "保存しました。", "ok");
   } catch (error) {
-    if (current === session) status.textContent = error.message;
+    if (current === session) setStatus(error.message, "error");
   } finally {
     if (current === session) {
       busy = false;
@@ -321,9 +339,15 @@ form.addEventListener("submit", async (event) => {
     }
   }
 });
+addEventListener("beforeunload", event => {
+  if (drafts.size) event.preventDefault();
+});
 
 navigator.serial?.addEventListener("disconnect", (event) => {
   if (event.target === port) void disconnect("USB 接続が切れました。設定を確認するには再接続してください。", true);
 });
-if (!usb.requestPort) status.textContent = "このブラウザーでは USB デバイスを選択できません。Android ではリンクをコピーし、Chrome アプリで開いてください。";
+document.querySelector("#support").textContent = !usb.requestPort && !wirelessAdapter()
+  ? "このブラウザーは USB 接続にも無線接続にも対応していません。PC の Chrome または Edge で開いてください。Android ではリンクをコピーし、Chrome アプリで開きます。"
+  : !usb.requestPort ? "このブラウザーでは USB デバイスを選択できません。Android ではリンクをコピーし、Chrome アプリで開いてください。"
+  : !wirelessAdapter() ? "このブラウザーでは無線接続を使えません。USB で接続してください。" : "";
 render(undefined);
