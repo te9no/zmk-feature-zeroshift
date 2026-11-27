@@ -87,7 +87,7 @@ function renderSlots(slots) {
       choices.append(option);
     }
     const summary = document.createElement("small");
-    summary.textContent = "起動中：" + modes.find(([id]) => id === active)[1];
+    summary.textContent = "起動中：" + (modes.find(([id]) => id === active)?.[1] ?? "ID " + active);
     group.append(legend, choices, summary);
     describedSlots.append(group);
   });
@@ -146,8 +146,9 @@ function render(next) {
   for (const group of [lower, inner]) {
     for (const input of group.querySelectorAll("input")) {
       const label = input.closest("label");
-      const allowed = state.supported ? state.supported[group.id]?.includes(input.value)
-        : !label.hasAttribute("data-mekabu") && (!label.hasAttribute("data-extended") || !!session?.restart);
+      // Always show the stored choice so firmware without a capability list can keep it.
+      const allowed = input.value === state[group.id] || (state.supported ? state.supported[group.id]?.includes(input.value)
+        : !label.hasAttribute("data-mekabu") && (!label.hasAttribute("data-extended") || !!session?.restart));
       label.hidden = input.disabled = !allowed;
       input.checked = input.value === (drafts.get(state.side)?.[group.id] ?? state[group.id]);
     }
