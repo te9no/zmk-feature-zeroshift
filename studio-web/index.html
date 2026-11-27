@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#172d24">
   <title>ZeroShift · モジュール設定</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23172d24'/%3E%3Cpath d='M9 12l10-2v10l-10 2z' fill='none' stroke='%23c2ed94' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M13 24l10-2V12' fill='none' stroke='%23c2ed94' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.mjs"></script>
 </head>
@@ -11,74 +14,67 @@
   <main>
     <header>
       <a class="brand" href="./" aria-label="ZeroShift ホーム"><i aria-hidden="true"></i>ZeroShift</a>
+      <strong id="side">未接続</strong>
     </header>
     <div class="workspace">
       <section class="connect" aria-labelledby="heading">
-        <div class="title-row"><h1 id="heading">モジュール設定</h1><strong id="side">未接続</strong></div>
-        <p id="status" role="status">キーボードの親機を接続してください。</p>
+        <h1 id="heading">モジュール設定</h1>
+        <p class="lead">ソケットに装着したモジュールを選んで保存します。保存した側をリセットすると、選んだモジュールで起動します。</p>
+        <ol class="steps" id="steps">
+          <li><b>接続</b><span>親機を USB か無線でつなぐ</span></li>
+          <li><b>選択</b><span>モジュールを選んで保存</span></li>
+          <li><b>リセット</b><span>保存した側をリセット</span></li>
+        </ol>
         <label class="wireless-filter" hidden>無線機器名で絞り込む（任意）
-          <input id="wireless-name" type="text" placeholder="例：GeaconPolaris" autocapitalize="none" spellcheck="false">
+          <input id="wireless-name" type="text" placeholder="GeaconPolaris" autocapitalize="none" autocomplete="off" spellcheck="false">
         </label>
         <div class="bar">
           <button type="button" id="connection">USB 接続</button>
           <button type="button" id="wireless">無線接続</button>
           <button type="button" id="demo">デモモード</button>
         </div>
+        <p id="support" class="support" hidden></p>
+        <p id="status" role="status">キーボードの親機を接続してください。</p>
         <details id="help">
           <summary>接続方法</summary>
-          <p>USB は親機をデータ通信対応ケーブルで接続します。Android は USB デバイスを選択し、アクセスを許可してください。PC は Studio 用ポートを選びます。Android でシリアルポートの画面が開く場合は <a href="?usb=device">USB デバイス選択に切り替えてください</a>。無線では親機を接続待ちにして「無線接続」を押します。候補が多いときは、端末の設定に表示される機器名の先頭を、大文字・小文字も合わせて入力してください。</p>
-          <p>CaGiMe が無線の候補に出ないときは、標準配列の左側で Esc を押しながら U を押します。</p>
+          <dl>
+            <dt>USB</dt>
+            <dd>親機をデータ通信対応ケーブルで接続します。PC は Studio 用ポートを選びます。Android は USB デバイスを選択し、アクセスを許可してください。Android でシリアルポートの画面が開く場合は <a href="?usb=device">USB デバイス選択に切り替えてください</a>。</dd>
+            <dt>無線</dt>
+            <dd>親機を接続待ちにして「無線接続」を押します。候補が多いときは、端末の設定に表示される機器名の先頭を、大文字・小文字も合わせて入力してください。CaGiMe が候補に出ないときは、標準配列の左側で Esc を押しながら U を押します。</dd>
+            <dt>左右</dt>
+            <dd>左右どちらを設定する場合も、接続先は親機です。子機側を設定するときは、左右の電源を入れて通信できる状態にしてください。</dd>
+          </dl>
         </details>
       </section>
       <section id="target-bar" hidden aria-label="設定対象">
         <fieldset id="target" class="halves">
           <legend>設定する側</legend>
-          <label><input type="radio" name="half" value="left" checked><span><i aria-hidden="true"></i>左側</span></label>
-          <label><input type="radio" name="half" value="right"><span><i aria-hidden="true"></i>右側</span></label>
+          <label><input type="radio" name="half" value="left" checked><span><i aria-hidden="true"></i>左側<em hidden title="未保存の変更があります">未保存</em></span></label>
+          <label><input type="radio" name="half" value="right"><span><i aria-hidden="true"></i>右側<em hidden title="未保存の変更があります">未保存</em></span></label>
         </fieldset>
-        <button id="reload">再読込</button>
-        <button type="button" id="restart" hidden>デモで再起動</button>
+        <button type="button" id="reload">再読込</button>
       </section>
-    <form hidden id="modules">
-      <div class="slots" id="described-slots" hidden></div>
-      <div class="slots" id="legacy-slots">
-        <fieldset class="slot" id="lower" aria-describedby="lower-state">
-          <legend><b id="slot-name">下側</b> <span id="lower-connector"></span></legend>
-          <div class="choices">
-              <label><input type="radio" name="lowerMode" value="off"><span><img class="module-icon" src="icons/off.png" width="32" height="32" alt="">オフ</span></label>
-              <label><input type="radio" name="lowerMode" value="pmw3610"><span><img class="module-icon" src="icons/pmw3610.png" width="32" height="32" alt="">トラックボール<small>PMW3610</small></span></label>
-              <label><input type="radio" name="lowerMode" value="encoder"><span><img class="module-icon" src="icons/encoder.png" width="32" height="32" alt="">エンコーダ</span></label>
-              <label data-extended><input type="radio" name="lowerMode" value="pat9125"><span><img class="module-icon" src="icons/pat9125.png" width="32" height="32" alt="">光学エンコーダ<small>PAT9125</small></span></label>
-              <label data-extended><input type="radio" name="lowerMode" value="lpps"><span><img class="module-icon" src="icons/lpps.png" width="32" height="32" alt="">LPPS<small>ADS1220</small></span></label>
-              <label><input type="radio" name="lowerMode" value="stick"><span><img class="module-icon" src="icons/stick.png" width="32" height="32" alt="">アナログスティック</span></label>
-              <label><input type="radio" name="lowerMode" value="key"><span><img class="module-icon" src="icons/key.png" width="32" height="32" alt="">1uキー</span></label>
-              <label data-mekabu><input type="radio" name="lowerMode" value="iqs"><span><img class="module-icon" src="icons/tpd.png" width="32" height="32" alt="">トラックパッド<small>IQS9151</small></span></label>
-              <label data-mekabu><input type="radio" name="lowerMode" value="rzt"><span><img class="module-icon" src="icons/rzt.png" width="32" height="32" alt="">RZT</span></label>
-              <label data-mekabu><input type="radio" name="lowerMode" value="tpd"><span><img class="module-icon" src="icons/tpd.png" width="32" height="32" alt="">Cirque タッチパッド</span></label>
+      <form hidden id="modules">
+        <div class="notice" id="pending" hidden>
+          <div>
+            <b id="pending-title"></b>
+            <p id="pending-steps"></p>
           </div>
-          <small id="lower-state"></small>
-        </fieldset>
-        <fieldset class="slot" id="inner" aria-describedby="inner-state">
-          <legend><b id="inner-name">中央側</b> <span id="inner-connector"></span></legend>
-          <div class="choices">
-              <label><input type="radio" name="innerMode" value="off"><span><img class="module-icon" src="icons/off.png" width="32" height="32" alt="">オフ</span></label>
-              <label><input type="radio" name="innerMode" value="pmw3610"><span><img class="module-icon" src="icons/pmw3610.png" width="32" height="32" alt="">トラックボール<small>PMW3610</small></span></label>
-              <label><input type="radio" name="innerMode" value="lpps"><span><img class="module-icon" src="icons/lpps.png" width="32" height="32" alt="">LPPS<small>ADS1220</small></span></label>
-              <label><input type="radio" name="innerMode" value="encoder"><span><img class="module-icon" src="icons/encoder.png" width="32" height="32" alt="">エンコーダ</span></label>
-              <label data-extended><input type="radio" name="innerMode" value="pat9125"><span><img class="module-icon" src="icons/pat9125.png" width="32" height="32" alt="">光学エンコーダ<small>PAT9125</small></span></label>
-              <label data-mekabu><input type="radio" name="innerMode" value="tpd"><span><img class="module-icon" src="icons/tpd.png" width="32" height="32" alt="">Cirque タッチパッド</span></label>
-              <label data-mekabu><input type="radio" name="innerMode" value="iqs"><span><img class="module-icon" src="icons/tpd.png" width="32" height="32" alt="">トラックパッド<small>IQS9151</small></span></label>
-              <label><input type="radio" name="innerMode" value="key"><span><img class="module-icon" src="icons/key.png" width="32" height="32" alt="">1uキー</span></label>
-          </div>
-          <small id="inner-state"></small>
-        </fieldset>
-      </div>
-      <div class="actions">
-        <span id="edit-state" role="status"></span>
-        <button type="submit" id="save">設定を保存</button>
-      </div>
-    </form>
+          <button type="button" id="restart" hidden>デモで再起動</button>
+        </div>
+        <div class="slots" id="slots"></div>
+        <div class="actions">
+          <span id="edit-state" role="status"></span>
+          <button type="button" id="discard" hidden>変更を破棄</button>
+          <button type="submit" id="save">設定を保存</button>
+        </div>
+      </form>
     </div>
+    <footer>
+      <a href="https://github.com/te9no/zmk-feature-zeroshift#web-ui">使い方</a>
+      <a href="LICENSES.txt">ライセンス</a>
+    </footer>
   </main>
 </body>
 </html>
